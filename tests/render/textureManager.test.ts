@@ -105,4 +105,17 @@ describe('TextureManager', () => {
     await flush();
     expect(load).toHaveBeenCalledTimes(3);
   });
+
+  it('keeps and returns the 8K map when it is wanted again while it is still loading', async () => {
+    const { load, made } = makeLoader();
+    const m = new TextureManager(true, load);
+    m.get('mars', 'color', slot, true);
+    m.get('mars', 'color', slot, false);
+    m.get('mars', 'color', slot, true);
+    await flush();
+    expect(load.mock.calls.filter(([stem]) => stem === '8k_mars')).toHaveLength(1);
+    expect(made.get('8k_mars')!.dispose).not.toHaveBeenCalled();
+    expect(m.hiCount()).toBe(1);
+    expect(m.get('mars', 'color', slot, true)).toBe(made.get('8k_mars'));
+  });
 });

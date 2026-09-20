@@ -21,7 +21,10 @@ export interface BodyRenderState {
   data: BodyData;
   /** Body centre relative to the camera, Three.js axes, metres. */
   rel: Vec3;
-  /** Body orientation (Three.js axes); the sphere mesh's local +Y is the pole, the equator is local y = 0. */
+  /**
+   * Body orientation (Three.js axes); the sphere mesh's local +Y is the pole, the equator is local y = 0.
+   * quaternion, sunLocal and camLocal are valid every frame, also while the body is drawn as a sprite.
+   */
   quaternion: THREE.Quaternion;
   /** From the body toward the Sun, Three.js axes. */
   sunDir: THREE.Vector3;
@@ -154,12 +157,14 @@ export class BodyView {
     this.mesh.visible = asSphere;
     this.sprite.visible = !asSphere;
 
+    // Orientation is needed by the effects even while the body is a sprite, so it is set every frame.
+    this.mesh.quaternion.setFromRotationMatrix(orientationToThree(entry.orientation));
     if (asSphere) {
       this.detail = pickMeshDetail(screenDiameterPx, this.detail);
       this.mesh.geometry = this.detail === 'near' ? getNearGeometry() : farGeometry;
       this.mesh.position.set(rel[0], rel[1], rel[2]);
-      this.mesh.quaternion.setFromRotationMatrix(orientationToThree(entry.orientation));
     } else {
+      this.releaseHiRes();
       this.sprite.position.set(rel[0], rel[1], rel[2]);
       const { sizePx, opacity } = spriteAppearance(
         screenDiameterPx,
@@ -188,6 +193,17 @@ export class BodyView {
     if (asSphere) this.updateSurface(state);
     for (const effect of this.effects) effect.update(state);
     return { rel, distanceM, screenDiameterPx };
+  }
+
+  /**
+   * updateSurface (the only place textures.get runs) is skipped for sprites, so a body that drops from sphere to sprite
+   * in one step would keep its 8K maps. Asking for the low tier on every slot disposes them.
+   */
+  private releaseHiRes(): void {
+    const { maps, id } = this.data;
+    this.textures.get(id, 'color', maps.color, false);
+    if (maps.night) this.textures.get(id, 'night', maps.night, false);
+    if (maps.clouds) this.textures.get(id, 'clouds', maps.clouds, false);
   }
 
   private updateSurface(state: BodyRenderState): void {
