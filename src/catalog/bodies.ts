@@ -44,6 +44,7 @@ export interface RingSpec {
   tint: string;
 }
 
+/** Sun glint on water: Blinn-Phong scaled by Fresnel reflectance (2% looking down, 100% at grazing), so `strength` is high. */
 export interface OceanGlint {
   strength: number;
   shininess: number;
@@ -107,7 +108,7 @@ export const BODIES: readonly BodyData[] = [
       night: { lo: '2k_earth_nightmap', hi: '8k_earth_nightmap' },
       clouds: { lo: '2k_earth_clouds', hi: '8k_earth_clouds' },
     },
-    oceanGlint: { strength: 0.7, shininess: 80 },
+    oceanGlint: { strength: 5, shininess: 30 },
     cloudShellFraction: 0.0015,
     color: '#4f86d6', source: PLANET_SOURCE,
     atmosphere: {

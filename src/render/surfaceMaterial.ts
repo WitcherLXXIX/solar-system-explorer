@@ -76,14 +76,15 @@ void main() {
       float night = 1.0 - smoothstep(-0.08, 0.12, ndl);
       lit += texture2D(uNight, vUv).rgb * night * (1.0 - 0.85 * cloudCover);
     }
-    // Ocean glint: Blinn-Phong on water, mask derived from the day map, suppressed by cloud (mirrors earthMath.waterMask/glintIntensity).
+    // Ocean glint: Blinn-Phong on water, mask derived from the day map, suppressed by cloud (mirrors earthMath.waterMask/fresnel/glintIntensity).
     if (uGlint > 0.0 && ndl > 0.0) {
       float lum = dot(albedo, vec3(0.299, 0.587, 0.114));
       float water = smoothstep(0.01, 0.06, albedo.b - max(albedo.r, albedo.g)) * (1.0 - smoothstep(0.5, 0.8, lum));
       vec3 V = normalize(-vPosW); // the camera is the origin of render space
       vec3 H = normalize(uSunDir + V);
       float spec = pow(max(dot(N, H), 0.0), uShine);
-      lit += vec3(uGlint * spec * water * (1.0 - cloudCover));
+      float fres = 0.02 + 0.98 * pow(1.0 - max(dot(N, V), 0.0), 5.0); // Schlick, mirrors earthMath.fresnel
+      lit += vec3(uGlint * spec * water * fres * (1.0 - cloudCover));
     }
   }
   gl_FragColor = vec4(lit, 1.0);

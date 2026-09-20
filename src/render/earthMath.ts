@@ -16,10 +16,18 @@ export function waterMask(r: number, g: number, b: number): number {
   return smoothstep(0.01, 0.06, b - Math.max(r, g)) * (1 - smoothstep(0.5, 0.8, luminance));
 }
 
-/** Blinn-Phong sun glint on water: `ndh` is N.H (H the Sun-camera half vector), `ndl` is N.L, `cloud` is cloud cover 0..1. */
+/** Schlick reflectance of water: about 2% looking straight down, rising to 1 at grazing view angles. `ndv` is N.V. */
+export function fresnel(ndv: number): number {
+  return 0.02 + 0.98 * Math.pow(1 - Math.max(ndv, 0), 5);
+}
+
+/**
+ * Blinn-Phong sun glint on water, scaled by Fresnel reflectance: `ndh` is N.H (H the Sun-camera half vector), `ndl` is N.L,
+ * `cloud` is cloud cover 0..1 and `ndv` is N.V (the camera's view of the surface).
+ */
 export function glintIntensity(
-  ndh: number, shininess: number, ndl: number, strength: number, water: number, cloud: number,
+  ndh: number, shininess: number, ndl: number, strength: number, water: number, cloud: number, ndv: number,
 ): number {
   if (ndl <= 0) return 0;
-  return strength * Math.pow(Math.max(ndh, 0), shininess) * water * (1 - cloud);
+  return strength * Math.pow(Math.max(ndh, 0), shininess) * water * fresnel(ndv) * (1 - cloud);
 }
