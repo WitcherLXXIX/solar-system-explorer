@@ -133,6 +133,9 @@ declare global {
       setEffects(on: boolean): void;
       hiResBodies(): string[];
       textureCount(): number;
+      hiTextureCount(): number;
+      pixelStats(): { lit: number; warm: number; blue: number };
+      fps(ms: number): Promise<number>;
     };
   }
 }
@@ -157,4 +160,12 @@ window.__solar = {
   setEffects: (on) => scene.setEffectsEnabled(on),
   hiResBodies: () => scene.hiResBodies(),
   textureCount: () => scene.textureCount(),
+  hiTextureCount: () => scene.hiTextureCount(),
+  pixelStats: () => scene.pixelStats(),
+  fps: async (ms) => {
+    const startFrames = frames;
+    const startTime = performance.now();
+    await new Promise<void>((resolve) => setTimeout(resolve, ms));
+    return (frames - startFrames) / ((performance.now() - startTime) / 1000);
+  },
 };

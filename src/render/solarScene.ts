@@ -7,6 +7,7 @@ import { BodyView, type RenderInfo } from './bodyView';
 import { nearPlane, orbitLineOpacity, toRenderSpace } from './cameraRelative';
 import { HI_RES_BUDGET, chooseHiRes, wantsHiTexture, type HiResCandidate } from './lod';
 import { OrbitLine } from './orbitLine';
+import { classifyPixel } from './pixelStats';
 import { TextureManager } from './textureManager';
 import { loadTexture } from './textures';
 
@@ -70,6 +71,10 @@ export class SolarScene {
   /** Bodies that held their 8K maps in the last frame. */
   hiResBodies(): BodyId[] {
     return [...this.granted];
+  }
+  /** Number of hi-res (8K) textures actually resident on the GPU (the granted set alone would hide a leak). */
+  hiTextureCount(): number {
+    return this.textures.hiCount();
   }
   /** Number of textures alive on the GPU. */
   textureCount(): number {
@@ -157,5 +162,24 @@ export class SolarScene {
       if (buffer[i]! + buffer[i + 1]! + buffer[i + 2]! > 30) lit++;
     }
     return lit;
+  }
+
+  /** Renders once more and counts lit, warm and blue pixels over the whole frame (for the smoke test). */
+  pixelStats(): { lit: number; warm: number; blue: number } {
+    const counts = { lit: 0, warm: 0, blue: 0 };
+    if (!this.lastInput) return counts;
+    this.render(this.lastInput);
+    const gl = this.renderer.getContext();
+    const w = gl.drawingBufferWidth;
+    const h = gl.drawingBufferHeight;
+    const buffer = new Uint8Array(w * h * 4);
+    gl.readPixels(0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, buffer);
+    for (let i = 0; i < buffer.length; i += 4) {
+      const c = classifyPixel(buffer[i]!, buffer[i + 1]!, buffer[i + 2]!);
+      if (c.lit) counts.lit++;
+      if (c.warm) counts.warm++;
+      if (c.blue) counts.blue++;
+    }
+    return counts;
   }
 }
