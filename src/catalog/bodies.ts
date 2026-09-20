@@ -6,6 +6,10 @@ export interface MapSlot {
   hi?: string;
 }
 
+/**
+ * Atmosphere shell parameters. These numbers are tuned for appearance (a soft limb glow that does not wash out the
+ * disc), not measured physical values: scale heights are several times the real ones and coefficients are hand-balanced.
+ */
 export interface AtmosphereSpec {
   /** Shell top as a fraction of the body radius. */
   heightFraction: number;

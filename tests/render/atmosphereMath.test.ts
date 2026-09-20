@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { density, opticalDepth, raySphere, viewSegment } from '../../src/render/atmosphereMath';
+import { density, opticalDepth, raySphere, SHADOW_EDGE, shadowFactor, viewSegment } from '../../src/render/atmosphereMath';
 
 describe('raySphere', () => {
   it('returns entry and exit distances for a ray that crosses the sphere', () => {
@@ -58,5 +58,43 @@ describe('viewSegment', () => {
   });
   it('returns null when the ray misses the shell', () => {
     expect(viewSegment([0, 3, 3], [0, 0, -1], 1.0157)).toBeNull();
+  });
+});
+
+describe('shadowFactor', () => {
+  const sun = [0, 0, 1] as const;
+  it('is fully lit on the sunward hemisphere, even directly in line with the planet', () => {
+    expect(shadowFactor([0, 0, 1.01], sun)).toBe(1);
+    expect(shadowFactor([0.3, 0, 1.01], sun)).toBe(1);
+    expect(shadowFactor([0.2, 0.2, 0], sun)).toBe(1); // on the terminator plane
+  });
+  it('is fully dark behind the planet, inside its cylindrical shadow', () => {
+    expect(shadowFactor([0, 0, -1.01], sun)).toBe(0);
+    expect(shadowFactor([0.5, 0, -1.2], sun)).toBe(0);
+    expect(shadowFactor([0, SHADOW_EDGE - 0.001, -1.01], sun)).toBe(0);
+  });
+  it('is fully lit behind the planet once clear of the shadow cylinder', () => {
+    expect(shadowFactor([0, 1.0, -1.01], sun)).toBe(1);
+    expect(shadowFactor([1.02, 0, -0.2], sun)).toBe(1);
+  });
+  it('is 0.5 at the middle of the soft edge and does not reach the previous wide 0.95 edge', () => {
+    const mid = (SHADOW_EDGE + 1) / 2;
+    expect(shadowFactor([mid, 0, -0.5], sun)).toBeCloseTo(0.5, 12);
+    expect(SHADOW_EDGE).toBeGreaterThanOrEqual(0.97);
+  });
+  it('is monotonic non-decreasing with distance from the sun axis, and does not depend on the depth behind the planet', () => {
+    let last = -1;
+    for (let r = 0.9; r <= 1.1; r += 0.001) {
+      const f = shadowFactor([r, 0, -0.7], sun);
+      expect(f).toBeGreaterThanOrEqual(last);
+      last = f;
+    }
+    expect(shadowFactor([0.99, 0, -0.1], sun)).toBeCloseTo(shadowFactor([0.99, 0, -3], sun), 12);
+  });
+  it('uses the perpendicular distance for any sun direction', () => {
+    const s = [0.6, 0, 0.8] as const;
+    // Perpendicular distance 1.0 from the axis, behind the planet: lit. Perpendicular distance 0.9: dark.
+    expect(shadowFactor([-0.3, 1.0, -0.4], s)).toBe(1);
+    expect(shadowFactor([-0.3, 0.9, -0.4], s)).toBe(0);
   });
 });

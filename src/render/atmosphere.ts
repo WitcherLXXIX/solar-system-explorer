@@ -56,6 +56,8 @@ void main() {
   if (t1 <= t0) discard;
 
   float dt = (t1 - t0) / float(VIEW_STEPS);
+  // Interleaved gradient noise jitters the sample positions per pixel (offset in [0,1) of a step, so t stays in [t0, t1]),
+  // turning the 1/12th-step banding of the view integral into fine noise.
   float mu = dot(d, uSunDir);
   float g = uMieG;
   float phaseR = 3.0 / (16.0 * PI) * (1.0 + mu * mu);
@@ -66,15 +68,15 @@ void main() {
   float odR = 0.0;
   float odM = 0.0;
   for (int i = 0; i < VIEW_STEPS; i++) {
-    vec3 p = uCamPos + d * (t0 + (float(i) + 0.5) * dt);
+    vec3 p = uCamPos + d * (t0 + (float(i) + fract(52.9829189 * fract(dot(gl_FragCoord.xy, vec2(0.06711056, 0.00583715))))) * dt);
     float h = length(p) - 1.0;
     float dR = dens(h, uScaleH) * dt;
     float dM = dens(h, uMieScaleH) * dt;
     odR += dR;
     odM += dM;
-    // Planet shadow, softened over 5% of the radius so the terminator does not step in 1/12ths (visible banding with a hard cut).
+    // Planet shadow, softened over 1.5% of the radius (SHADOW_EDGE in atmosphereMath.ts) to avoid a hard cut at the terminator.
     float sunB = dot(p, uSunDir);
-    float lit = sunB < 0.0 ? smoothstep(0.95, 1.0, sqrt(max(dot(p, p) - sunB * sunB, 0.0))) : 1.0;
+    float lit = sunB < 0.0 ? smoothstep(0.985, 1.0, sqrt(max(dot(p, p) - sunB * sunB, 0.0))) : 1.0;
     if (lit <= 0.0) continue;
     float lt = raySphere(p, uSunDir, uShell).y;
     float ldt = lt / float(LIGHT_STEPS);

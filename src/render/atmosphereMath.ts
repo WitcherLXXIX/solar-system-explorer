@@ -45,3 +45,19 @@ export function viewSegment(camPos: Vec3, dir: Vec3, shellRadius: number): [numb
   if (planet && planet[0] > 0) t1 = Math.min(t1, planet[0]);
   return t1 > t0 ? [t0, t1] : null;
 }
+
+/** Distance from the sun axis (in body radii) at which the planet shadow starts to fade in; 1 is the hard cylinder edge. */
+export const SHADOW_EDGE = 0.985;
+
+/**
+ * Fraction of sunlight reaching point p (body radii, planet at the origin), mirroring the `lit` term in atmosphere.ts.
+ * Only the anti-sunward hemisphere is ever shadowed: there, points closer to the sun axis than SHADOW_EDGE are dark and
+ * the light fades in (smoothstep) up to the planet's own radius, softening the terminator over 1.5% of the radius.
+ */
+export function shadowFactor(p: Vec3, sunDir: Vec3, edge = SHADOW_EDGE): number {
+  const sunB = dot(p, sunDir);
+  if (sunB >= 0) return 1;
+  const perp = Math.sqrt(Math.max(dot(p, p) - sunB * sunB, 0));
+  const x = Math.min(Math.max((perp - edge) / (1 - edge), 0), 1);
+  return x * x * (3 - 2 * x);
+}
