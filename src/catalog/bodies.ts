@@ -162,18 +162,18 @@ export const BODIES: readonly BodyData[] = [
       rayleigh: [0.8, 2.0, 2.1], mie: 0.5, mieG: 0.5, intensity: 2.4, tint: [0.6, 1.0, 0.95],
     },
     rings: {
-      innerM: 41_000_000, outerM: 52_000_000, tint: '#5f5a55',
+      innerM: 41_000_000, outerM: 52_000_000, tint: '#a29b92',
       bands: [
-        { centerKm: 41_837, widthKm: 1.6, opacity: 0.3 }, // ring 6
-        { centerKm: 42_234, widthKm: 1.9, opacity: 0.3 }, // ring 5
-        { centerKm: 42_570, widthKm: 2.4, opacity: 0.3 }, // ring 4
-        { centerKm: 44_718, widthKm: 7.2, opacity: 0.3 }, // alpha
-        { centerKm: 45_661, widthKm: 8.2, opacity: 0.3 }, // beta
-        { centerKm: 47_176, widthKm: 1.9, opacity: 0.3 }, // eta
-        { centerKm: 47_627, widthKm: 3.6, opacity: 0.3 }, // gamma
-        { centerKm: 48_300, widthKm: 6.6, opacity: 0.3 }, // delta
-        { centerKm: 50_024, widthKm: 2.0, opacity: 0.3 }, // lambda
-        { centerKm: 51_149, widthKm: 58, opacity: 0.5 }, // epsilon
+        { centerKm: 41_837, widthKm: 1.6, opacity: 0.6 }, // ring 6
+        { centerKm: 42_234, widthKm: 1.9, opacity: 0.6 }, // ring 5
+        { centerKm: 42_570, widthKm: 2.4, opacity: 0.6 }, // ring 4
+        { centerKm: 44_718, widthKm: 7.2, opacity: 0.6 }, // alpha
+        { centerKm: 45_661, widthKm: 8.2, opacity: 0.6 }, // beta
+        { centerKm: 47_176, widthKm: 1.9, opacity: 0.6 }, // eta
+        { centerKm: 47_627, widthKm: 3.6, opacity: 0.6 }, // gamma
+        { centerKm: 48_300, widthKm: 6.6, opacity: 0.6 }, // delta
+        { centerKm: 50_024, widthKm: 2.0, opacity: 0.6 }, // lambda
+        { centerKm: 51_149, widthKm: 58, opacity: 0.9 }, // epsilon
       ],
     },
   },
@@ -186,13 +186,13 @@ export const BODIES: readonly BodyData[] = [
       rayleigh: [0.5, 1.5, 2.8], mie: 0.5, mieG: 0.5, intensity: 3.0, tint: [0.45, 0.7, 1.0],
     },
     rings: {
-      innerM: 40_000_000, outerM: 64_000_000, tint: '#5a5854',
+      innerM: 40_000_000, outerM: 64_000_000, tint: '#9a9791',
       bands: [
-        { centerKm: 41_900, widthKm: 2_000, opacity: 0.02 }, // Galle
-        { centerKm: 53_200, widthKm: 113, opacity: 0.05 }, // Le Verrier
-        { centerKm: 55_200, widthKm: 4_000, opacity: 0.01 }, // Lassell/Arago plateau, 53,200-57,200 km
-        { centerKm: 57_200, widthKm: 100, opacity: 0.03 }, // Arago
-        { centerKm: 62_933, widthKm: 35, opacity: 0.05 }, // Adams
+        { centerKm: 41_900, widthKm: 2_000, opacity: 0.05 }, // Galle
+        { centerKm: 53_200, widthKm: 113, opacity: 0.3 }, // Le Verrier
+        { centerKm: 55_200, widthKm: 4_000, opacity: 0.03 }, // Lassell/Arago plateau, 53,200-57,200 km
+        { centerKm: 57_200, widthKm: 100, opacity: 0.2 }, // Arago
+        { centerKm: 62_933, widthKm: 35, opacity: 0.4 }, // Adams
       ],
     },
   },

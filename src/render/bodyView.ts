@@ -6,6 +6,7 @@ import { AtmosphereEffect } from './atmosphere';
 import { SPRITE_THRESHOLD_PX, apparentDiameterPx, toRenderSpace } from './cameraRelative';
 import { pickMeshDetail, type MeshDetail } from './lod';
 import { orientationToThree } from './orientation';
+import { RingEffect } from './rings';
 import { SPRITE_MIN_SIZE_PX, illuminationFraction, spriteAppearance } from './sprite';
 import { createSurfaceMaterial, dummyTexture } from './surfaceMaterial';
 import type { TextureManager } from './textureManager';
@@ -131,7 +132,7 @@ export class BodyView {
   private createEffects(): BodyEffect[] {
     const effects: BodyEffect[] = [];
     if (this.data.atmosphere) effects.push(new AtmosphereEffect(this.data));
-    // [T6] ring effect is created here
+    if (this.data.rings) effects.push(new RingEffect(this.data, this.surface, this.textures));
     // [T7] cloud effect is created here
     return effects;
   }

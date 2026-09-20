@@ -64,7 +64,7 @@ void main() {
       if (s > 0.0) {
         vec3 hit = vPosB + uSunLocal * s;
         float u = (length(hit.xz) - uRingInner) / (uRingOuter - uRingInner);
-        if (u > 0.0 && u < 1.0) shadow = 1.0 - 0.9 * texture2D(uRingAlpha, vec2(u, 0.5)).a;
+        if (u > 0.0 && u < 1.0) shadow = 1.0 - 0.9 * textureLod(uRingAlpha, vec2(u, 0.5), 0.0).a;
       }
     }
     float diffuse = max(ndl, 0.0) * shadow;
