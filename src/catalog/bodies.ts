@@ -129,8 +129,8 @@ export const BODIES: readonly BodyData[] = [
     axialTiltDeg: 3.1, surfaceGravity: 23.1, meanTempK: 163.15, tempNote: 'at the 1 bar level',
     maps: { color: { lo: '2k_jupiter', hi: '8k_jupiter' } }, color: '#c99b6d', source: PLANET_SOURCE,
     atmosphere: {
-      heightFraction: 0.04, scaleHeightFraction: 0.008, mieScaleHeightFraction: 0.006,
-      rayleigh: [1.9, 2.0, 2.3], mie: 0.5, mieG: 0.5, intensity: 4, tint: [1.0, 0.9, 0.7],
+      heightFraction: 0.02, scaleHeightFraction: 0.008, mieScaleHeightFraction: 0.006,
+      rayleigh: [1.9, 2.0, 2.3], mie: 0.5, mieG: 0.5, intensity: 2.2, tint: [1.0, 0.9, 0.7],
     },
     rings: {
       innerM: 92_000_000, outerM: 226_000_000, tint: '#8a7f73',
@@ -147,8 +147,8 @@ export const BODIES: readonly BodyData[] = [
     axialTiltDeg: 26.7, surfaceGravity: 9.0, meanTempK: 133.15, tempNote: 'at the 1 bar level',
     maps: { color: { lo: '2k_saturn', hi: '8k_saturn' } }, color: '#e0c98f', source: PLANET_SOURCE,
     atmosphere: {
-      heightFraction: 0.04, scaleHeightFraction: 0.008, mieScaleHeightFraction: 0.006,
-      rayleigh: [1.8, 1.9, 2.2], mie: 0.5, mieG: 0.5, intensity: 4, tint: [1.0, 0.93, 0.72],
+      heightFraction: 0.02, scaleHeightFraction: 0.008, mieScaleHeightFraction: 0.006,
+      rayleigh: [1.8, 1.9, 2.2], mie: 0.5, mieG: 0.5, intensity: 2.4, tint: [1.0, 0.93, 0.72],
     },
     // D ring inner edge to F ring: the alpha strip spans exactly this range (Cassini Division at 71% of the width).
     rings: { innerM: 66_900_000, outerM: 140_220_000, alphaMap: '8k_saturn_ring_alpha', tint: '#c9b99a' },
@@ -158,8 +158,8 @@ export const BODIES: readonly BodyData[] = [
     axialTiltDeg: 97.8, surfaceGravity: 8.7, meanTempK: 78.15, tempNote: 'at the 1 bar level',
     maps: { color: { lo: '2k_uranus' } }, color: '#9fd8e0', source: PLANET_SOURCE,
     atmosphere: {
-      heightFraction: 0.04, scaleHeightFraction: 0.008, mieScaleHeightFraction: 0.006,
-      rayleigh: [0.8, 2.0, 2.1], mie: 0.5, mieG: 0.5, intensity: 4, tint: [0.6, 1.0, 0.95],
+      heightFraction: 0.02, scaleHeightFraction: 0.008, mieScaleHeightFraction: 0.006,
+      rayleigh: [0.8, 2.0, 2.1], mie: 0.5, mieG: 0.5, intensity: 2.4, tint: [0.6, 1.0, 0.95],
     },
     rings: {
       innerM: 41_000_000, outerM: 52_000_000, tint: '#5f5a55',
@@ -182,8 +182,8 @@ export const BODIES: readonly BodyData[] = [
     axialTiltDeg: 28.3, surfaceGravity: 11.0, meanTempK: 73.15, tempNote: 'at the 1 bar level',
     maps: { color: { lo: '2k_neptune' } }, color: '#4a6fe0', source: PLANET_SOURCE,
     atmosphere: {
-      heightFraction: 0.04, scaleHeightFraction: 0.008, mieScaleHeightFraction: 0.006,
-      rayleigh: [0.5, 1.5, 2.8], mie: 0.5, mieG: 0.5, intensity: 6, tint: [0.45, 0.7, 1.0],
+      heightFraction: 0.02, scaleHeightFraction: 0.008, mieScaleHeightFraction: 0.006,
+      rayleigh: [0.5, 1.5, 2.8], mie: 0.5, mieG: 0.5, intensity: 3.0, tint: [0.45, 0.7, 1.0],
     },
     rings: {
       innerM: 40_000_000, outerM: 64_000_000, tint: '#5a5854',
