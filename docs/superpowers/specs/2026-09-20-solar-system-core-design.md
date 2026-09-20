@@ -46,13 +46,14 @@ Per-frame data flow: `clock` advances, `ephemeris` supplies float64 positions, `
 
 ## Rendering and scale
 
-- **Precision:** zoom range is roughly 100 m above a surface to about 10^17 m. Float64 (native JS numbers) holds the state. Only camera-relative offsets reach the GPU, so nearby geometry never sees large numbers.
+- **Precision:** zoom range is from 2% of the focused body's radius above its surface (about 127 km at Earth) out to about 10^17 m in the architecture (phase 1 content stops near Neptune). Float64 (native JS numbers) holds the state. Only camera-relative offsets reach the GPU, so nearby geometry never sees large numbers.
 - **Depth:** Three.js logarithmic depth buffer. The camera near plane scales with distance to the focused surface so close-ups do not clip.
 - **Bodies at every size:** a body is drawn as real geometry when it covers enough pixels, and as a point sprite when sub-pixel. Sprite brightness follows apparent size and illumination.
 - **Orbit lines:** each orbit is sampled from the ephemeris over one period (about 512 points, kept in float64). Every frame the CPU subtracts the camera position and uploads float32 vertices.
 - **Lighting:** the Sun is a point light and the only real light source, plus a faint ambient term. This gives correct phases.
 - **Rotation and tilt:** each body spins at its catalogued sidereal rate about its tilted axis.
-- **Camera limits:** minimum distance is just above the focused body's surface. Maximum is a single constant, set slightly beyond Neptune in phase 1 and raised in phase 4.
+- **Camera limits:** minimum altitude is 2% of the focused body's radius, because a 128-segment sphere mesh and 2K textures look faceted and blurry any closer (changed from the original "just above the surface" during planning). Maximum distance is a single constant (1.2e13 m, 80 AU, slightly beyond Neptune), raised in phase 4.
+- **Orientation:** body axes come from astronomy-engine's `RotationAxis` (IAU pole and prime-meridian angle), so tilt, spin rate and retrograde rotation are not hand-typed. The catalog's tilt and rotation period are for the info panel only.
 
 ## UI
 
@@ -70,7 +71,7 @@ Per-frame data flow: `clock` advances, `ephemeris` supplies float64 positions, `
 ## Testing
 
 - Unit tests: `ephemeris` against known reference positions on several dates, `clock`, `format`, and the camera-relative transform. The transform test places a body at 4.5e12 m with the camera 1 km away and checks the offset is exact to float32 limits.
-- Smoke test: headless browser loads the page and fails on any console error or blank canvas.
+- Smoke test: a headed, visible browser window (never headless; standing user preference) loads the page, zooms out and in, flies to Neptune, and fails on any console error or blank canvas.
 - Manual: the zoom itself (continuity, jitter, clipping, pops) is checked by eye.
 
 ## Project layout
@@ -86,7 +87,7 @@ Per-frame data flow: `clock` advances, `ephemeris` supplies float64 positions, `
 ## Definition of done
 
 1. Runs locally with `npm run dev`, and the tests pass.
-2. Continuous zoom from just above a planet's surface out past Neptune with no jitter, clipping or pops.
+2. Continuous zoom from 2% of a planet's radius above its surface out past Neptune with no jitter, clipping or pops.
 3. Positions match astronomy-engine reference values for several test dates.
 4. Sun and 8 planets have real sizes, tilts, rotation and orbits, with time control forward and backward.
 5. All four UI elements work.
@@ -99,4 +100,5 @@ Moons, dwarf planets, asteroid and Kuiper belts, comets, atmospheres, rings, sta
 ## Open items for later phases
 
 - Phase 2: choice of high-resolution texture source and its size budget.
+- Phase 2: lower the minimum altitude below 2% of radius (needs high-resolution textures plus an analytic-sphere or level-of-detail renderer).
 - Phase 4: how to represent nearby stars (catalogue source, and depth handling beyond 10^17 m).
