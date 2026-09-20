@@ -24,7 +24,7 @@ Phase 2 was split during brainstorming. This spec covers **2a, planet fidelity**
 
 ## Texture availability (verified 2026-09-20)
 
-8K exists for Mercury, Venus surface, Earth (day, night, clouds), Mars, Jupiter, Saturn (plus an 8K ring alpha PNG), the Sun and the Moon. A 4K Venus cloud-top map exists. Uranus and Neptune have only 2K maps (nearly featureless in reality, so nothing is lost). Earth has no specular or normal map on this source, so the ocean mask is derived from the day map.
+Files named 8k_* exist for Mercury, Venus surface, Earth (day, night, clouds), Mars, Jupiter, Saturn (plus a ring alpha PNG), the Sun and the Moon. Measured after download: Earth (all three), Mars and Mercury are truly 8192 x 4096, but the Jupiter, Saturn and Sun files are only 4096 x 2048. The "hi" tier is therefore 8K for Earth, Mars and Mercury and 4K for Jupiter, Saturn and the Sun; the tier logic is identical. A 4K Venus cloud-top map exists. Uranus and Neptune have only 2K maps (nearly featureless in reality, so nothing is lost). Earth has no specular or normal map on this source, so the ocean mask is derived from the day map.
 
 ## Architecture
 
