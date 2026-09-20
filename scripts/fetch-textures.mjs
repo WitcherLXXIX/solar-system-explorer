@@ -1,28 +1,35 @@
-// Downloads the 2K planet textures from Solar System Scope (CC BY 4.0) into public/textures.
+// Downloads every texture the catalog references from Solar System Scope (CC BY 4.0) into public/textures.
+// The file list comes straight from the TypeScript catalog (Node strips the types), so it cannot drift.
 import { mkdir, stat, writeFile } from 'node:fs/promises';
+import { allTextureFiles } from '../src/catalog/textureFiles.ts';
 
-const FILES = [
-  '2k_sun', '2k_mercury', '2k_venus_surface', '2k_earth_daymap', '2k_mars',
-  '2k_jupiter', '2k_saturn', '2k_uranus', '2k_neptune',
-];
 const DIR = new URL('../public/textures/', import.meta.url);
 await mkdir(DIR, { recursive: true });
 
-for (const name of FILES) {
-  const target = new URL(`${name}.jpg`, DIR);
-  if (await stat(target).then(() => true, () => false)) {
-    console.log(`have  ${name}`);
+const MAGIC = { jpg: [0xff, 0xd8], png: [0x89, 0x50] };
+const MIN_BYTES = { jpg: 20_000, png: 2_000 };
+
+let totalBytes = 0;
+for (const file of allTextureFiles()) {
+  const ext = file.endsWith('.png') ? 'png' : 'jpg';
+  const target = new URL(file, DIR);
+  const existing = await stat(target).then((s) => s.size, () => null);
+  if (existing !== null) {
+    totalBytes += existing;
+    console.log(`have  ${file}`);
     continue;
   }
   // The site serves an HTML page unless a browser-like user agent is sent.
-  const res = await fetch(`https://www.solarsystemscope.com/textures/download/${name}.jpg`, {
+  const res = await fetch(`https://www.solarsystemscope.com/textures/download/${file}`, {
     headers: { 'User-Agent': 'Mozilla/5.0' },
   });
   const bytes = new Uint8Array(await res.arrayBuffer());
-  const isJpeg = bytes[0] === 0xff && bytes[1] === 0xd8;
-  if (!res.ok || !isJpeg || bytes.length < 20_000) {
-    throw new Error(`${name}: expected a JPEG, got status ${res.status}, ${bytes.length} bytes`);
+  const [m0, m1] = MAGIC[ext];
+  if (!res.ok || bytes[0] !== m0 || bytes[1] !== m1 || bytes.length < MIN_BYTES[ext]) {
+    throw new Error(`${file}: expected a ${ext.toUpperCase()}, got status ${res.status}, ${bytes.length} bytes`);
   }
   await writeFile(target, bytes);
-  console.log(`got   ${name} (${Math.round(bytes.length / 1024)} KB)`);
+  totalBytes += bytes.length;
+  console.log(`got   ${file} (${Math.round(bytes.length / 1024)} KB)`);
 }
+console.log(`total ${Math.round(totalBytes / 1024 / 1024)} MB in public/textures`);
