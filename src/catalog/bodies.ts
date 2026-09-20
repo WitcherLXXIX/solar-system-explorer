@@ -107,7 +107,7 @@ export const BODIES: readonly BodyData[] = [
       night: { lo: '2k_earth_nightmap', hi: '8k_earth_nightmap' },
       clouds: { lo: '2k_earth_clouds', hi: '8k_earth_clouds' },
     },
-    oceanGlint: { strength: 0.8, shininess: 60 },
+    oceanGlint: { strength: 0.7, shininess: 80 },
     cloudShellFraction: 0.0015,
     color: '#4f86d6', source: PLANET_SOURCE,
     atmosphere: {

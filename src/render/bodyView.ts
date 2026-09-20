@@ -4,6 +4,7 @@ import type { FrameEntry } from '../ephemeris/frame';
 import type { Vec3 } from '../math';
 import { AtmosphereEffect } from './atmosphere';
 import { SPRITE_THRESHOLD_PX, apparentDiameterPx, toRenderSpace } from './cameraRelative';
+import { CloudEffect } from './clouds';
 import { pickMeshDetail, type MeshDetail } from './lod';
 import { orientationToThree } from './orientation';
 import { RingEffect } from './rings';
@@ -133,7 +134,7 @@ export class BodyView {
     const effects: BodyEffect[] = [];
     if (this.data.atmosphere) effects.push(new AtmosphereEffect(this.data));
     if (this.data.rings) effects.push(new RingEffect(this.data, this.surface, this.textures));
-    // [T7] cloud effect is created here
+    if (this.data.maps.clouds && this.data.cloudShellFraction !== undefined) effects.push(new CloudEffect(this.data, this.textures));
     return effects;
   }
 
@@ -215,6 +216,16 @@ export class BodyView {
     u.uHasMap.value = color ? 1 : 0;
     u.uSunDir.value.copy(state.sunDir);
     u.uSunLocal.value.copy(state.sunLocal);
-    // [T7] night lights and ocean glint uniforms are set here
+    const maps = this.data.maps;
+    const night = maps.night ? this.textures.get(this.data.id, 'night', maps.night, state.hiRes) : null;
+    const clouds = maps.clouds ? this.textures.get(this.data.id, 'clouds', maps.clouds, state.hiRes) : null;
+    const features = state.effectsEnabled;
+    u.uNight.value = night ?? dummyTexture();
+    u.uHasNight.value = features && night ? 1 : 0;
+    u.uClouds.value = clouds ?? dummyTexture();
+    u.uHasClouds.value = features && clouds ? 1 : 0;
+    const glint = this.data.oceanGlint;
+    u.uGlint.value = features && glint ? glint.strength : 0;
+    if (glint) u.uShine.value = glint.shininess;
   }
 }

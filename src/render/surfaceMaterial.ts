@@ -69,7 +69,22 @@ void main() {
     }
     float diffuse = max(ndl, 0.0) * shadow;
     lit = albedo * (diffuse + 0.04 / PI);
-    // [T7] night lights and ocean glint are added here
+    // Night lights blend in across a soft terminator and are dimmed by cloud cover (mirrors earthMath.nightFactor).
+    // Cloud coverage is sampled once, outside the branches, and reused for the dimming and the glint suppression.
+    float cloudCover = uHasClouds > 0.5 ? texture2D(uClouds, vUv).r : 0.0;
+    if (uHasNight > 0.5) {
+      float night = 1.0 - smoothstep(-0.08, 0.12, ndl);
+      lit += texture2D(uNight, vUv).rgb * night * (1.0 - 0.85 * cloudCover);
+    }
+    // Ocean glint: Blinn-Phong on water, mask derived from the day map, suppressed by cloud (mirrors earthMath.waterMask/glintIntensity).
+    if (uGlint > 0.0 && ndl > 0.0) {
+      float lum = dot(albedo, vec3(0.299, 0.587, 0.114));
+      float water = smoothstep(0.01, 0.06, albedo.b - max(albedo.r, albedo.g)) * (1.0 - smoothstep(0.5, 0.8, lum));
+      vec3 V = normalize(-vPosW); // the camera is the origin of render space
+      vec3 H = normalize(uSunDir + V);
+      float spec = pow(max(dot(N, H), 0.0), uShine);
+      lit += vec3(uGlint * spec * water * (1.0 - cloudCover));
+    }
   }
   gl_FragColor = vec4(lit, 1.0);
   #include <logdepthbuf_fragment>
