@@ -95,3 +95,32 @@ describe('flyTo', () => {
     expect(c.displayId).toBe('neptune');
   });
 });
+
+describe('snapTo', () => {
+  it('jumps to the given focus, altitude and angles without a flight', () => {
+    const c = make();
+    c.snapTo('neptune', 1e8, 1.0, 0.3);
+    expect(c.isFlying).toBe(false);
+    const pose = c.update(0);
+    expect(pose.focusId).toBe('neptune');
+    expect(pose.altitudeM).toBeCloseTo(1e8, -1);
+    expect(c.yaw).toBe(1.0);
+    expect(c.pitch).toBeCloseTo(0.3, 12);
+  });
+  it('cancels a flight in progress', () => {
+    const c = make();
+    c.flyTo('neptune');
+    c.snapTo('earth', 1e7, 0, 0);
+    expect(c.isFlying).toBe(false);
+    expect(c.displayId).toBe('earth');
+  });
+  it('clamps altitude to the limits and pitch to the maximum', () => {
+    const c = make();
+    c.snapTo('earth', 1, 0, 10);
+    expect(c.update(0).altitudeM).toBeCloseTo(MIN_ALTITUDE_FRACTION * 6.371e6, 3);
+    expect(c.pitch).toBeCloseTo(MAX_PITCH, 12);
+    c.snapTo('earth', 1e30, 0, -10);
+    expect(c.update(0).altitudeM).toBeCloseTo(MAX_CAMERA_DISTANCE_M, -3);
+    expect(c.pitch).toBeCloseTo(-MAX_PITCH, 12);
+  });
+});

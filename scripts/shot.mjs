@@ -1,4 +1,4 @@
-// Usage: node scripts/shot.mjs out.png [--fly <bodyId>] [--wheel <pixels>]
+// Usage: node scripts/shot.mjs out.png [--fly <bodyId>] [--time ISO] [--view id,altitudeM,yawOffsetDeg,pitchDeg] [--wheel <pixels>] [--effects off]
 // Opens a visible browser, optionally flies/zooms, saves a screenshot, prints console errors.
 import { launchVisible, startServer } from './lib/browser.mjs';
 
@@ -18,6 +18,16 @@ try {
   if (fly) {
     await page.evaluate((id) => window.__solar.flyTo(id), fly);
     await page.waitForFunction(() => !window.__solar.isFlying(), null, { timeout: 15000 });
+  }
+  const time = option('--time');
+  if (time) await page.evaluate((iso) => window.__solar.setTime(iso), time);
+  const view = option('--view');
+  if (view) {
+    const [id, altitudeM, yawOffsetDeg, pitchDeg] = view.split(',');
+    await page.evaluate(
+      ([i, a, y, p]) => window.__solar.setView(i, Number(a), Number(y), Number(p)),
+      [id, altitudeM, yawOffsetDeg, pitchDeg],
+    );
   }
   const wheel = option('--wheel');
   if (wheel) {

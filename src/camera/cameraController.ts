@@ -95,6 +95,15 @@ export class CameraController {
     };
   }
 
+  /** Jumps straight to a view with no flight. Used by tests and the debug hook. */
+  snapTo(id: BodyId, altitudeM: number, yaw: number, pitch: number): void {
+    this.flight = null;
+    this.focusId = id;
+    this.logAlt = Math.log(this.clampAltitude(altitudeM, id));
+    this.yaw = yaw;
+    this.pitch = clamp(pitch, -MAX_PITCH, MAX_PITCH);
+  }
+
   update(dtS: number): CameraPose {
     const flight = this.flight;
     if (flight) {

@@ -7,6 +7,7 @@ import { computeFrame, type Frame } from './ephemeris/frame';
 import { SolarScene, type FrameInput } from './render/solarScene';
 import { isWebGL2Available } from './render/webgl';
 import { length } from './math';
+import { DEG } from './units';
 import { createBodyList } from './ui/bodyList';
 import { createInfoPanel } from './ui/infoPanel';
 import { attachInput } from './ui/input';
@@ -127,6 +128,8 @@ declare global {
       isFlying(): boolean;
       focusId(): BodyId;
       flyTo(id: BodyId): void;
+      setView(id: BodyId, altitudeM: number, yawOffsetDeg: number, pitchDeg: number): void;
+      setTime(iso: string): void;
     };
   }
 }
@@ -140,4 +143,12 @@ window.__solar = {
   isFlying: () => camera.isFlying,
   focusId: () => camera.displayId,
   flyTo: (id) => camera.flyTo(id),
+  setView: (id, altitudeM, yawOffsetDeg, pitchDeg) => {
+    const base = id === 'sun' ? 0 : sunwardYaw(computeFrame(clock.date)[id].position);
+    camera.snapTo(id, altitudeM, base + yawOffsetDeg * DEG, pitchDeg * DEG);
+  },
+  setTime: (iso) => {
+    clock.setTimeMs(Date.parse(iso));
+    clock.pause();
+  },
 };
