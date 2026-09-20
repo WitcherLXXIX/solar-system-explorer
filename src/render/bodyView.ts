@@ -1,8 +1,10 @@
 import * as THREE from 'three';
 import type { BodyData } from '../catalog/bodies';
 import type { FrameEntry } from '../ephemeris/frame';
-import type { Mat3, Vec3 } from '../math';
-import { SPRITE_THRESHOLD_PX, apparentDiameterPx, eclipticToThree, toRenderSpace } from './cameraRelative';
+import type { Vec3 } from '../math';
+import { SPRITE_THRESHOLD_PX, apparentDiameterPx, toRenderSpace } from './cameraRelative';
+import { orientationToThree } from './orientation';
+import { SPRITE_MIN_SIZE_PX, illuminationFraction, spriteAppearance } from './sprite';
 import { loadBodyTexture } from './textures';
 
 export interface RenderInfo {
@@ -32,28 +34,10 @@ function getDotTexture(): THREE.CanvasTexture {
   return dotTexture;
 }
 
-const basis = new THREE.Matrix4();
-const bx = new THREE.Vector3();
-const by = new THREE.Vector3();
-const bz = new THREE.Vector3();
-
-/**
- * Sphere-mesh local axes: +X = body x (prime meridian), +Y = body z (north pole), +Z = body -y.
- * SphereGeometry puts longitude 0 on local +X and increases east toward local -Z, which matches this.
- */
-function orientationToThree(m: Mat3): THREE.Matrix4 {
-  const x = eclipticToThree(m[0]);
-  const y = eclipticToThree(m[2]);
-  const z = eclipticToThree(m[1]);
-  bx.set(x[0], x[1], x[2]);
-  by.set(y[0], y[1], y[2]);
-  bz.set(-z[0], -z[1], -z[2]);
-  return basis.makeBasis(bx, by, bz);
-}
-
 export class BodyView {
   readonly mesh: THREE.Mesh;
   readonly sprite: THREE.Points;
+  private readonly spriteMaterial: THREE.PointsMaterial;
   private readonly material: THREE.MeshStandardMaterial | THREE.MeshBasicMaterial;
 
   constructor(private readonly data: BodyData) {
@@ -67,13 +51,13 @@ export class BodyView {
 
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute('position', new THREE.Float32BufferAttribute([0, 0, 0], 3));
-    this.sprite = new THREE.Points(
-      geometry,
-      new THREE.PointsMaterial({
-        color: data.color, size: 6, sizeAttenuation: false, map: getDotTexture(),
-        transparent: true, depthTest: false, alphaTest: 0.01,
-      }),
-    );
+    // depthTest on, so a nearer body's sphere hides a far body's dot; depthWrite off, so dots never hide each other.
+    // Size and opacity are set every frame in update().
+    this.spriteMaterial = new THREE.PointsMaterial({
+      color: data.color, size: SPRITE_MIN_SIZE_PX, sizeAttenuation: false, map: getDotTexture(),
+      transparent: true, depthTest: true, depthWrite: false, alphaTest: 0.01,
+    });
+    this.sprite = new THREE.Points(geometry, this.spriteMaterial);
     this.sprite.frustumCulled = false;
     this.sprite.renderOrder = 10;
 
@@ -85,7 +69,7 @@ export class BodyView {
     });
   }
 
-  update(entry: FrameEntry, cameraPos: Vec3, fovYRad: number, viewportHeightPx: number): RenderInfo {
+  update(entry: FrameEntry, cameraPos: Vec3, sunPos: Vec3, fovYRad: number, viewportHeightPx: number): RenderInfo {
     const rel = toRenderSpace(entry.position, cameraPos);
     const distanceM = Math.hypot(rel[0], rel[1], rel[2]);
     const screenDiameterPx = apparentDiameterPx(this.data.radiusM, distanceM, fovYRad, viewportHeightPx);
@@ -97,6 +81,13 @@ export class BodyView {
       this.mesh.quaternion.setFromRotationMatrix(orientationToThree(entry.orientation));
     } else {
       this.sprite.position.set(rel[0], rel[1], rel[2]);
+      const { sizePx, opacity } = spriteAppearance(
+        screenDiameterPx,
+        illuminationFraction(entry.position, sunPos, cameraPos),
+        this.data.kind === 'star',
+      );
+      this.spriteMaterial.size = sizePx;
+      this.spriteMaterial.opacity = opacity;
     }
     return { rel, distanceM, screenDiameterPx };
   }

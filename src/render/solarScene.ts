@@ -82,7 +82,7 @@ export class SolarScene {
     for (const body of BODIES) {
       const entry = input.frame[body.id];
       const view = this.views.get(body.id)!;
-      const result = view.update(entry, input.cameraPos, this.fovYRad, this.height);
+      const result = view.update(entry, input.cameraPos, input.frame.sun.position, this.fovYRad, this.height);
       info.set(body.id, result);
       const orbit = this.orbits.get(body.id);
       if (orbit) {
