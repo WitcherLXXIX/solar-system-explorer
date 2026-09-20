@@ -4,13 +4,13 @@ import { SPRITE_THRESHOLD_PX } from './cameraRelative';
 /** Below this apparent diameter a body is at its faintest sprite (Neptune from Earth is about 0.01 px). */
 export const SPRITE_FAINTEST_PX = 0.01;
 /** Nominal sprite size in CSS px at the faintest and at the sphere/sprite switch. The dot texture fades to 0 at its edge, so a
- * 4 px sprite reads as roughly the 3 px disc the sphere becomes: no size pop at the threshold. */
-export const SPRITE_MIN_SIZE_PX = 2.5;
-export const SPRITE_MAX_SIZE_PX = 4;
-const OPACITY_FAINTEST = 0.45;
+ * 5 px sprite reads as roughly the 3 px disc the sphere becomes: no size pop at the threshold. */
+export const SPRITE_MIN_SIZE_PX = 4;
+export const SPRITE_MAX_SIZE_PX = 5;
+const OPACITY_FAINTEST = 0.7;
 /** Illumination scales opacity between this and 1 (a new phase is dimmed, never invisible). */
-const ILLUMINATION_FLOOR = 0.6;
-/** The Sun's dot is the switch size (4 px) up close and grows to 6 px when far away, so it stays a bright anchor. */
+const ILLUMINATION_FLOOR = 0.7;
+/** The Sun's dot is the switch size (5 px) up close and grows to 7 px when far away, so it stays a bright anchor. */
 const STAR_EXTRA_SIZE_PX = 2;
 
 /** Fraction of the body's disc that is lit as seen from the camera: (1 + cos(phase angle)) / 2. */
