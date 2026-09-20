@@ -57,9 +57,16 @@ html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
 
 #credit { position: absolute; bottom: 4px; right: 12px; font-size: 10px; color: var(--dim); pointer-events: none; }
 
+/* The centred time bar (about 680 px) would overlap the scale readout (16 to about 232 px) below about 1140 px wide,
+   so between 761 and 1200 px it is anchored to the right of the readout and wraps instead of centring. */
+@media (max-width: 1200px) {
+  #timebar { left: 250px; right: 16px; transform: none; flex-wrap: wrap; justify-content: center; white-space: normal; }
+}
+
 @media (max-width: 760px) {
-  #info { top: auto; bottom: 150px; right: 8px; width: 210px; }
-  #toggles { display: none; }
-  #timebar { flex-wrap: wrap; width: calc(100% - 32px); justify-content: center; white-space: normal; }
-  #scale { bottom: 110px; }
+  /* Stack from the bottom: time bar (up to about 115 px wrapped), then scale readout, then info panel above it. */
+  #info { top: auto; bottom: 290px; right: 8px; width: 210px; max-height: calc(100vh - 360px); overflow-y: auto; }
+  #toggles { left: 128px; gap: 10px; padding: 8px 10px; font-size: 12px; }
+  #timebar { left: 16px; }
+  #scale { bottom: 145px; }
 }
