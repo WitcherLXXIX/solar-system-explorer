@@ -61,7 +61,7 @@ export class BodyView {
     this.sprite.frustumCulled = false;
     this.sprite.renderOrder = 10;
 
-    void loadBodyTexture(data.texture).then((texture) => {
+    void loadBodyTexture(data.maps.color.lo).then((texture) => {
       if (!texture) return;
       this.material.map = texture;
       this.material.color.set(0xffffff);

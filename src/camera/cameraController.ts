@@ -3,7 +3,7 @@ import { add, clamp, length, lerp, lerpAngle, lerpVec, scale, sub, type Vec3 } f
 import { DEG } from '../units';
 
 export const MAX_CAMERA_DISTANCE_M = 1.2e13;
-export const MIN_ALTITUDE_FRACTION = 0.02;
+export const MIN_ALTITUDE_FRACTION = 0.002;
 export const FLIGHT_SECONDS = 4;
 export const FLY_TO_RADII = 4;
 export const DEFAULT_PITCH = 12 * DEG;
