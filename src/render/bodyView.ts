@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import type { BodyData } from '../catalog/bodies';
 import type { FrameEntry } from '../ephemeris/frame';
 import type { Vec3 } from '../math';
+import { AtmosphereEffect } from './atmosphere';
 import { SPRITE_THRESHOLD_PX, apparentDiameterPx, toRenderSpace } from './cameraRelative';
 import { pickMeshDetail, type MeshDetail } from './lod';
 import { orientationToThree } from './orientation';
@@ -129,7 +130,7 @@ export class BodyView {
   /** One effect per catalog feature. Later tasks add one line each here. */
   private createEffects(): BodyEffect[] {
     const effects: BodyEffect[] = [];
-    // [T5] atmosphere effect is created here
+    if (this.data.atmosphere) effects.push(new AtmosphereEffect(this.data));
     // [T6] ring effect is created here
     // [T7] cloud effect is created here
     return effects;
