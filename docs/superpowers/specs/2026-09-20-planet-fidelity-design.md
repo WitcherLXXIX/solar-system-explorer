@@ -33,7 +33,7 @@ Phase 1's ephemeris, clock, camera controller and HUD are unchanged in structure
 | Unit | Job |
 |---|---|
 | `catalog` (extended) | Per body: texture files per tier (2K always; 8K where it exists; 4K for the Venus cloud map), optional night map, cloud map, `atmosphere` spec (Rayleigh colour, Mie strength and asymmetry, shell height and scale height as fractions of radius), `rings` spec (inner and outer radius in metres, an alpha map file or a procedural band list `{centerKm, widthKm, opacity}`), and `oceanGlint` (strength, shininess). |
-| `render/lod` (pure) | `pickMeshDetail(screenPx, current)` and `pickTextureTier(screenPx, current)` with hysteresis. Unit-tested. |
+| `render/lod` (pure) | `pickMeshDetail(screenPx, current)` and `wantsHiTexture(screenPx, currentlyHi)` with hysteresis. Unit-tested. |
 | `render/textureManager` | Keeps every body's 2K map resident; loads 8K only for the bodies that most need it (budget of two), chosen by a pure, tested `chooseHiRes(candidates, budget)`; disposes the rest. Async, with fallback to the current tier on any load failure. |
 | `render/surfaceMaterial` | One custom shader factory replacing the standard material. Lambert lighting from the Sun (same intensity model as phase 1, faint ambient) plus feature switches: night map, ring shadow, ocean glint. |
 | `render/bodyView` (extended) | Coordinates one body's parts: surface mesh (two shared detail levels), sprite, and optional atmosphere, rings, cloud shell. Receives the sun direction and the camera offset in body radii each frame. |

@@ -432,7 +432,6 @@ export function allTextureFiles(): string[] {
 - [ ] **Step 9: Commit.**
 
 ```bash
-git checkout -b phase-2a
 git add -A
 git commit -m "Extend catalog for phase 2a (maps, atmospheres, rings, glint) and lower minimum altitude to 0.2%" -m "Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 ```
