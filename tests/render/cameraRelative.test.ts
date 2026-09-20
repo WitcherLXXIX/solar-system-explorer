@@ -56,6 +56,9 @@ describe('nearPlane', () => {
   it('scales with altitude within sane bounds', () => {
     expect(nearPlane(1e5)).toBeCloseTo(5000, 6);
     expect(nearPlane(1)).toBe(1);
-    expect(nearPlane(1e13)).toBe(1e10);
+    // capped low so a zoomed-out camera passing through a body is not cut off by a huge near plane
+    expect(nearPlane(1e13)).toBe(1e7);
+    expect(nearPlane(1e9)).toBe(1e7);
+    expect(nearPlane(1e8)).toBeCloseTo(5e6, 6);
   });
 });

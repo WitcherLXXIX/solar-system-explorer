@@ -10,6 +10,7 @@ import { OrbitLine } from './orbitLine';
 export type { RenderInfo } from './bodyView';
 
 export const FOV_DEG = 50;
+/** Phase-4 "scale knob", together with the nearPlane cap, MAX_CAMERA_DISTANCE_M, MIN_ALTITUDE_FRACTION and SPRITE_THRESHOLD_PX. */
 export const FAR_M = 1e15;
 
 export interface FrameInput {
@@ -25,7 +26,8 @@ export class SolarScene {
   private readonly renderer: THREE.WebGLRenderer;
   private readonly camera = new THREE.PerspectiveCamera(FOV_DEG, 1, 1, FAR_M);
   private readonly scene = new THREE.Scene();
-  // decay 0: no distance falloff, so outer planets stay readable; the light direction still gives correct phases.
+  // decay 0 is a deliberate deviation from physical inverse-square falloff: with it Neptune would be about 900x dimmer than
+  // Earth. With no falloff outer planets stay readable, and the light direction still gives correct phases.
   private readonly sunLight = new THREE.PointLight(0xffffff, Math.PI, 0, 0);
   private readonly views = new Map<BodyId, BodyView>();
   private readonly orbits = new Map<BodyId, OrbitLine>();
