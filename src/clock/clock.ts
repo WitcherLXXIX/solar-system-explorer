@@ -43,14 +43,19 @@ export class SimClock {
     }
   }
 
+  /** Starts playing. At a range edge with the rate pointing outward, reverses first so tick() does not re-pause at once. */
   play(): void {
+    if ((this.ms >= MAX_TIME_MS && this.rateValue > 0) || (this.ms <= MIN_TIME_MS && this.rateValue < 0)) {
+      this.rateValue = -this.rateValue;
+    }
     this.playingValue = true;
   }
   pause(): void {
     this.playingValue = false;
   }
   toggle(): void {
-    this.playingValue = !this.playingValue;
+    if (this.playingValue) this.pause();
+    else this.play();
   }
   setRate(rate: number): void {
     this.rateValue = rate;

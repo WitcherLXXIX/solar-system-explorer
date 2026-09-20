@@ -37,7 +37,6 @@ export class SolarScene {
 
   constructor(canvas: HTMLCanvasElement, startDate: Date) {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, logarithmicDepthBuffer: true });
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.scene.add(new THREE.AmbientLight(0xffffff, 0.04), this.sunLight);
     for (const body of BODIES) {
       const view = new BodyView(body);
@@ -61,6 +60,7 @@ export class SolarScene {
   resize(width: number, height: number): void {
     this.width = Math.max(1, width);
     this.height = Math.max(1, height);
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // re-read: the window can move between displays
     this.renderer.setSize(this.width, this.height, false);
     this.camera.aspect = this.width / this.height;
     this.camera.updateProjectionMatrix();

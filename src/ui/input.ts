@@ -26,7 +26,14 @@ export function attachInput(target: HTMLElement, handlers: InputHandlers): void 
   );
 
   target.addEventListener('pointerdown', (e) => {
-    target.setPointerCapture(e.pointerId);
+    // Only the primary mouse button orbits. Touch pointers also report button 0, and a second finger is
+    // not "primary", so the gate applies to mouse-type pointers only and pinch keeps working.
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    try {
+      target.setPointerCapture(e.pointerId);
+    } catch {
+      // The pointer may already be gone (InvalidPointerId); dragging still works without capture.
+    }
     pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (pointers.size === 2) pinchDistance = currentPinch();
   });

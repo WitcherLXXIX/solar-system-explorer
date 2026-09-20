@@ -6,7 +6,7 @@ import { el } from './dom';
 const TARGET_BAR_PX = 120;
 
 export function createScaleReadout(root: HTMLElement): {
-  update(args: { pose: CameraPose; fovYRad: number; viewportHeightPx: number; sunDistanceM: number }): void;
+  update(args: { pose: CameraPose; fovYRad: number; viewportHeightPx: number; sunDistanceM: number | null }): void;
 } {
   const title = el('div', 'readout-title');
   const altitude = el('div', 'readout-line');
@@ -21,7 +21,7 @@ export function createScaleReadout(root: HTMLElement): {
       title.textContent = getBody(pose.focusId).name;
       altitude.textContent = `Altitude ${formatDistance(pose.altitudeM)}`;
       light.textContent = `Light travel ${formatLightTime(pose.altitudeM)}`;
-      sun.textContent = `Distance from Sun ${formatDistance(sunDistanceM)}`;
+      sun.textContent = `Distance from Sun ${sunDistanceM === null ? '—' : formatDistance(sunDistanceM)}`;
       const metresPerPx = (2 * Math.tan(fovYRad / 2) * pose.distanceM) / viewportHeightPx;
       const barM = niceLength(metresPerPx * TARGET_BAR_PX);
       bar.style.width = `${barM / metresPerPx}px`;

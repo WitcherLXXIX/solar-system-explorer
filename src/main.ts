@@ -13,15 +13,20 @@ import { attachInput } from './ui/input';
 import { createLabels } from './ui/labels';
 import { createScaleReadout } from './ui/scaleReadout';
 import { createTimeBar } from './ui/timeBar';
+import { isLabelOccluded, type ScreenBody } from './ui/labelLayout';
 import { createToggles } from './ui/toggles';
 
 const canvas = document.querySelector<HTMLCanvasElement>('#scene')!;
+const element = (id: string): HTMLElement => document.querySelector<HTMLElement>(`#${id}`)!;
 
 if (!isWebGL2Available()) {
   const fallback = document.querySelector<HTMLElement>('#fallback')!;
   fallback.hidden = false;
   fallback.textContent = 'This app needs WebGL 2, which your browser or graphics driver does not provide.';
   canvas.style.display = 'none';
+  // The HUD panels are empty without a scene; hide them instead of painting five empty boxes.
+  element('hud').hidden = true;
+  element('labels').hidden = true;
   throw new Error('WebGL 2 unavailable');
 }
 
@@ -41,7 +46,6 @@ const camera = new CameraController(source, {
 });
 
 const scene = new SolarScene(canvas, clock.date);
-const element = (id: string): HTMLElement => document.querySelector<HTMLElement>(`#${id}`)!;
 const toggles = createToggles(element('toggles'));
 const timeBar = createTimeBar(element('timebar'), clock);
 const readout = createScaleReadout(element('scale'));
@@ -49,6 +53,7 @@ const infoPanel = createInfoPanel(element('info'));
 const labels = createLabels(element('labels'));
 const bodyList = createBodyList(element('bodies'), (id) => camera.flyTo(id));
 let shownBody: BodyId | null = null;
+const FOCUSED_LABEL_HIDE_PX = 24;
 
 function resize(): void {
   scene.resize(window.innerWidth, window.innerHeight);
@@ -83,24 +88,27 @@ function loop(now: number): void {
     infoPanel.setBody(displayed);
     bodyList.setActive(displayed);
   }
-  const sunDistanceM = length(frame[displayed].position);
+  // Distance from the Sun is meaningless when the Sun itself is shown (it would read 0.00 m).
+  const sunDistanceM = displayed === 'sun' ? null : length(frame[displayed].position);
   infoPanel.update(sunDistanceM);
   readout.update({ pose, fovYRad: scene.fovYRad, viewportHeightPx: scene.viewportHeight, sunDistanceM });
   timeBar.update();
-  const projected = BODY_IDS.map((id) => {
+  const onScreen: ScreenBody[] = BODY_IDS.map((id) => {
     const r = info.get(id)!;
-    return { id, r, screen: scene.projectToScreen(r.rel) };
+    const screen = scene.projectToScreen(r.rel);
+    return { id, x: screen.x, y: screen.y, inFront: screen.inFront, distanceM: r.distanceM, screenDiameterPx: r.screenDiameterPx };
   });
   labels.update(
-    projected.map(({ id, r, screen }) => {
-      // A label is hidden when a nearer body's disc covers its anchor point (else it floats over that body).
-      const occluded = projected.some((o) => o.id !== id && o.screen.inFront && o.r.distanceM < r.distanceM &&
-        Math.hypot(o.screen.x - screen.x, o.screen.y - screen.y) < o.r.screenDiameterPx / 2);
+    onScreen.map((b) => {
+      // The label offset is about 10 px, so once the focused body's disc is wider than that its label would sit on
+      // its centre; the info panel and scale readout already name it, so drop that one label.
+      const coversOwnLabel = b.id === displayed && b.screenDiameterPx > FOCUSED_LABEL_HIDE_PX;
       return {
-        id, name: getBody(id).name, x: screen.x, y: screen.y, priority: getBody(id).radiusM,
+        id: b.id, name: getBody(b.id).name, x: b.x, y: b.y, priority: getBody(b.id).radiusM,
         // Hide behind the camera, off-screen, occluded, or when the body itself already fills much of the view.
-        visible: screen.inFront && !occluded && r.screenDiameterPx < scene.viewportHeight * 0.5 &&
-          screen.x > -50 && screen.x < window.innerWidth + 50 && screen.y > -20 && screen.y < window.innerHeight + 20,
+        visible: b.inFront && !coversOwnLabel && !isLabelOccluded(b, onScreen) &&
+          b.screenDiameterPx < scene.viewportHeight * 0.5 &&
+          b.x > -50 && b.x < window.innerWidth + 50 && b.y > -20 && b.y < window.innerHeight + 20,
       };
     }),
     toggles.labels,

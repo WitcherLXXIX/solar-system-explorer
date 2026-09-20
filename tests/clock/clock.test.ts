@@ -60,4 +60,51 @@ describe('SimClock', () => {
     expect(c.rate).toBe(1);
     expect(c.playing).toBe(true);
   });
+  it('play() at the upper edge with the rate pointing outward reverses so it actually plays', () => {
+    const c = new SimClock(MAX_TIME_MS - 1000);
+    c.setRate(SPEED_STEPS[5]);
+    c.tick(1);
+    expect(c.playing).toBe(false);
+    c.play();
+    expect(c.playing).toBe(true);
+    expect(c.rate).toBe(-SPEED_STEPS[5]);
+    c.tick(1);
+    expect(c.timeMs).toBeLessThan(MAX_TIME_MS);
+    expect(c.playing).toBe(true);
+  });
+  it('toggle() at the lower edge with the rate pointing outward reverses so it actually plays', () => {
+    const c = new SimClock(MIN_TIME_MS + 1000);
+    c.setRate(-SPEED_STEPS[3]);
+    c.tick(1);
+    expect(c.timeMs).toBe(MIN_TIME_MS);
+    expect(c.playing).toBe(false);
+    c.toggle();
+    expect(c.playing).toBe(true);
+    expect(c.rate).toBe(SPEED_STEPS[3]);
+    c.tick(1);
+    expect(c.timeMs).toBeGreaterThan(MIN_TIME_MS);
+    expect(c.playing).toBe(true);
+  });
+  it('play() at an edge with the rate already pointing inward keeps the rate', () => {
+    const c = new SimClock(MAX_TIME_MS);
+    c.setRate(-60);
+    c.pause();
+    c.play();
+    expect(c.rate).toBe(-60);
+    expect(c.playing).toBe(true);
+  });
+  it('play() away from the edges does not change the rate', () => {
+    const c = new SimClock(T0);
+    c.setRate(3600);
+    c.pause();
+    c.play();
+    expect(c.rate).toBe(3600);
+  });
+  it('toggle() to pause at an edge does not reverse the rate', () => {
+    const c = new SimClock(MAX_TIME_MS);
+    c.setRate(60);
+    c.toggle(); // was playing: pauses
+    expect(c.playing).toBe(false);
+    expect(c.rate).toBe(60);
+  });
 });

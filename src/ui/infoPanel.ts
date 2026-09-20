@@ -5,7 +5,7 @@ import {
 } from '../format/format';
 import { el } from './dom';
 
-export function createInfoPanel(root: HTMLElement): { setBody(id: BodyId): void; update(sunDistanceM: number): void } {
+export function createInfoPanel(root: HTMLElement): { setBody(id: BodyId): void; update(sunDistanceM: number | null): void } {
   const heading = el('h2');
   const kind = el('p', 'dim');
   const list = el('dl', 'facts');
@@ -39,7 +39,7 @@ export function createInfoPanel(root: HTMLElement): { setBody(id: BodyId): void;
       foot.textContent = `Source: ${body.source}`;
     },
     update(sunDistanceM) {
-      if (sunDistanceValue) sunDistanceValue.textContent = formatDistance(sunDistanceM);
+      if (sunDistanceValue) sunDistanceValue.textContent = sunDistanceM === null ? '—' : formatDistance(sunDistanceM);
     },
   };
 }

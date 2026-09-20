@@ -18,7 +18,7 @@ Scroll or pinch to zoom, drag to orbit, click a body in the list to fly there. T
 
 ## How the scale works
 
-All positions are float64 metres in the heliocentric ecliptic J2000 frame. Every frame they are subtracted from the camera position in float64 and only then cast to float32 for the GPU, so the render camera is always at the origin and there is no jitter at any scale. A logarithmic depth buffer covers the near/far range.
+All positions are float64 metres in the heliocentric ecliptic J2000 frame. Every frame they are subtracted from the camera position in float64 and only then cast to float32 for the GPU, so the render camera is always at the origin and float32 jitter is avoided by construction. This was checked by eye from about 1.27e5 m above Earth's surface out to about 1.2e13 m (past Neptune), not with an automated precision test. A logarithmic depth buffer covers the near/far range.
 
 ## Credits
 
