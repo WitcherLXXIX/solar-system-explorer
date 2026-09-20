@@ -21,6 +21,7 @@ try {
   }
   const time = option('--time');
   if (time) await page.evaluate((iso) => window.__solar.setTime(iso), time);
+  if (option('--effects') === 'off') await page.evaluate(() => window.__solar.setEffects(false));
   const view = option('--view');
   if (view) {
     const [id, altitudeM, yawOffsetDeg, pitchDeg] = view.split(',');

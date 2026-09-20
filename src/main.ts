@@ -130,6 +130,9 @@ declare global {
       flyTo(id: BodyId): void;
       setView(id: BodyId, altitudeM: number, yawOffsetDeg: number, pitchDeg: number): void;
       setTime(iso: string): void;
+      setEffects(on: boolean): void;
+      hiResBodies(): string[];
+      textureCount(): number;
     };
   }
 }
@@ -151,4 +154,7 @@ window.__solar = {
     clock.setTimeMs(Date.parse(iso));
     clock.pause();
   },
+  setEffects: (on) => scene.setEffectsEnabled(on),
+  hiResBodies: () => scene.hiResBodies(),
+  textureCount: () => scene.textureCount(),
 };

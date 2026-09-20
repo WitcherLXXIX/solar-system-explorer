@@ -3,9 +3,11 @@ import type { BodyData } from '../catalog/bodies';
 import type { FrameEntry } from '../ephemeris/frame';
 import type { Vec3 } from '../math';
 import { SPRITE_THRESHOLD_PX, apparentDiameterPx, toRenderSpace } from './cameraRelative';
+import { pickMeshDetail, type MeshDetail } from './lod';
 import { orientationToThree } from './orientation';
 import { SPRITE_MIN_SIZE_PX, illuminationFraction, spriteAppearance } from './sprite';
-import { loadBodyTexture } from './textures';
+import { createSurfaceMaterial, dummyTexture } from './surfaceMaterial';
+import type { TextureManager } from './textureManager';
 
 export interface RenderInfo {
   /** Camera-relative position in Three.js axes, metres. */
@@ -14,7 +16,51 @@ export interface RenderInfo {
   screenDiameterPx: number;
 }
 
-const sphereGeometry = new THREE.SphereGeometry(1, 128, 96);
+/** Everything an effect (atmosphere, rings, clouds) needs about one body this frame. All directions are unit vectors. */
+export interface BodyRenderState {
+  data: BodyData;
+  /** Body centre relative to the camera, Three.js axes, metres. */
+  rel: Vec3;
+  /** Body orientation (Three.js axes); the sphere mesh's local +Y is the pole, the equator is local y = 0. */
+  quaternion: THREE.Quaternion;
+  /** From the body toward the Sun, Three.js axes. */
+  sunDir: THREE.Vector3;
+  /** Camera position relative to the body centre, in body radii, Three.js axes. */
+  camRelBody: THREE.Vector3;
+  /** The same two vectors in the body's local axes. */
+  sunLocal: THREE.Vector3;
+  camLocal: THREE.Vector3;
+  screenDiameterPx: number;
+  /** True when the body is drawn as a sphere (false: point sprite). */
+  asSphere: boolean;
+  effectsEnabled: boolean;
+  /** True when this body holds its 8K maps this frame. */
+  hiRes: boolean;
+}
+
+export interface BodyEffect {
+  readonly objects: readonly THREE.Object3D[];
+  update(state: BodyRenderState): void;
+}
+
+export interface BodyUpdateContext {
+  cameraPos: Vec3;
+  /** Sun position in the world frame (metres), and relative to the camera in Three.js axes. */
+  sunPos: Vec3;
+  sunRel: Vec3;
+  fovYRad: number;
+  viewportHeightPx: number;
+  hiRes: boolean;
+  effectsEnabled: boolean;
+}
+
+const farGeometry = new THREE.SphereGeometry(1, 128, 96);
+let nearGeometry: THREE.SphereGeometry | null = null;
+/** About 200k vertices; built the first time a body gets close enough to need it. */
+function getNearGeometry(): THREE.SphereGeometry {
+  nearGeometry ??= new THREE.SphereGeometry(1, 512, 384);
+  return nearGeometry;
+}
 
 let dotTexture: THREE.CanvasTexture | null = null;
 function getDotTexture(): THREE.CanvasTexture {
@@ -35,24 +81,35 @@ function getDotTexture(): THREE.CanvasTexture {
 }
 
 export class BodyView {
-  readonly mesh: THREE.Mesh;
-  readonly sprite: THREE.Points;
+  /** Everything the scene must add: the sphere, the sprite and any effect objects. */
+  readonly objects: THREE.Object3D[] = [];
+  readonly hasHiRes: boolean;
+  private readonly mesh: THREE.Mesh;
+  private readonly sprite: THREE.Points;
   private readonly spriteMaterial: THREE.PointsMaterial;
-  private readonly material: THREE.MeshStandardMaterial | THREE.MeshBasicMaterial;
+  private readonly surface: THREE.ShaderMaterial;
+  private readonly effects: BodyEffect[];
+  private detail: MeshDetail = 'far';
+  private hiRes = false;
+  private readonly sunDir = new THREE.Vector3();
+  private readonly camRelBody = new THREE.Vector3();
+  private readonly sunLocal = new THREE.Vector3();
+  private readonly camLocal = new THREE.Vector3();
+  private readonly inverseQuat = new THREE.Quaternion();
 
-  constructor(private readonly data: BodyData) {
-    this.material =
-      data.kind === 'star'
-        ? new THREE.MeshBasicMaterial({ color: data.color })
-        : new THREE.MeshStandardMaterial({ color: data.color, roughness: 1, metalness: 0 });
-    this.mesh = new THREE.Mesh(sphereGeometry, this.material);
+  constructor(
+    private readonly data: BodyData,
+    private readonly textures: TextureManager,
+  ) {
+    this.hasHiRes = data.maps.color.hi !== undefined;
+    this.surface = createSurfaceMaterial(data.color, data.kind === 'star');
+    this.mesh = new THREE.Mesh(farGeometry, this.surface);
     this.mesh.scale.setScalar(data.radiusM);
     this.mesh.frustumCulled = false;
 
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute('position', new THREE.Float32BufferAttribute([0, 0, 0], 3));
     // depthTest on, so a nearer body's sphere hides a far body's dot; depthWrite off, so dots never hide each other.
-    // Size and opacity are set every frame in update().
     this.spriteMaterial = new THREE.PointsMaterial({
       color: data.color, size: SPRITE_MIN_SIZE_PX, sizeAttenuation: false, map: getDotTexture(),
       transparent: true, depthTest: true, depthWrite: false, alphaTest: 0.01,
@@ -61,34 +118,85 @@ export class BodyView {
     this.sprite.frustumCulled = false;
     this.sprite.renderOrder = 10;
 
-    void loadBodyTexture(data.maps.color.lo).then((texture) => {
-      if (!texture) return;
-      this.material.map = texture;
-      this.material.color.set(0xffffff);
-      this.material.needsUpdate = true;
-    });
+    this.effects = this.createEffects();
+    this.objects.push(this.mesh, this.sprite);
+    for (const effect of this.effects) this.objects.push(...effect.objects);
   }
 
-  update(entry: FrameEntry, cameraPos: Vec3, sunPos: Vec3, fovYRad: number, viewportHeightPx: number): RenderInfo {
+  /** One effect per catalog feature. Later tasks add one line each here. */
+  private createEffects(): BodyEffect[] {
+    const effects: BodyEffect[] = [];
+    // [T5] atmosphere effect is created here
+    // [T6] ring effect is created here
+    // [T7] cloud effect is created here
+    return effects;
+  }
+
+  get isHiRes(): boolean {
+    return this.hiRes;
+  }
+
+  /** Distance and apparent size, cheap enough to run for every body before the frame's texture budget is decided. */
+  measure(
+    entry: FrameEntry, cameraPos: Vec3, fovYRad: number, viewportHeightPx: number,
+  ): { distanceM: number; screenDiameterPx: number } {
     const rel = toRenderSpace(entry.position, cameraPos);
     const distanceM = Math.hypot(rel[0], rel[1], rel[2]);
-    const screenDiameterPx = apparentDiameterPx(this.data.radiusM, distanceM, fovYRad, viewportHeightPx);
+    return { distanceM, screenDiameterPx: apparentDiameterPx(this.data.radiusM, distanceM, fovYRad, viewportHeightPx) };
+  }
+
+  update(entry: FrameEntry, ctx: BodyUpdateContext): RenderInfo {
+    const rel = toRenderSpace(entry.position, ctx.cameraPos);
+    const distanceM = Math.hypot(rel[0], rel[1], rel[2]);
+    const screenDiameterPx = apparentDiameterPx(this.data.radiusM, distanceM, ctx.fovYRad, ctx.viewportHeightPx);
     const asSphere = screenDiameterPx >= SPRITE_THRESHOLD_PX;
+    this.hiRes = ctx.hiRes;
     this.mesh.visible = asSphere;
     this.sprite.visible = !asSphere;
+
     if (asSphere) {
+      this.detail = pickMeshDetail(screenDiameterPx, this.detail);
+      this.mesh.geometry = this.detail === 'near' ? getNearGeometry() : farGeometry;
       this.mesh.position.set(rel[0], rel[1], rel[2]);
       this.mesh.quaternion.setFromRotationMatrix(orientationToThree(entry.orientation));
     } else {
       this.sprite.position.set(rel[0], rel[1], rel[2]);
       const { sizePx, opacity } = spriteAppearance(
         screenDiameterPx,
-        illuminationFraction(entry.position, sunPos, cameraPos),
+        illuminationFraction(entry.position, ctx.sunPos, ctx.cameraPos),
         this.data.kind === 'star',
       );
       this.spriteMaterial.size = sizePx;
       this.spriteMaterial.opacity = opacity;
     }
+
+    // Directions are formed from float64 differences, then held as small unit vectors.
+    const radius = this.data.radiusM;
+    this.sunDir.set(ctx.sunRel[0] - rel[0], ctx.sunRel[1] - rel[1], ctx.sunRel[2] - rel[2]);
+    if (this.sunDir.lengthSq() < 1) this.sunDir.set(0, 1, 0); // the Sun itself
+    else this.sunDir.normalize();
+    this.camRelBody.set(-rel[0] / radius, -rel[1] / radius, -rel[2] / radius);
+    this.inverseQuat.copy(this.mesh.quaternion).invert();
+    this.sunLocal.copy(this.sunDir).applyQuaternion(this.inverseQuat);
+    this.camLocal.copy(this.camRelBody).applyQuaternion(this.inverseQuat);
+
+    const state: BodyRenderState = {
+      data: this.data, rel, quaternion: this.mesh.quaternion, sunDir: this.sunDir, camRelBody: this.camRelBody,
+      sunLocal: this.sunLocal, camLocal: this.camLocal, screenDiameterPx, asSphere,
+      effectsEnabled: ctx.effectsEnabled, hiRes: ctx.hiRes,
+    };
+    if (asSphere) this.updateSurface(state);
+    for (const effect of this.effects) effect.update(state);
     return { rel, distanceM, screenDiameterPx };
+  }
+
+  private updateSurface(state: BodyRenderState): void {
+    const u = this.surface.uniforms;
+    const color = this.textures.get(this.data.id, 'color', this.data.maps.color, state.hiRes);
+    u.uMap.value = color ?? dummyTexture();
+    u.uHasMap.value = color ? 1 : 0;
+    u.uSunDir.value.copy(state.sunDir);
+    u.uSunLocal.value.copy(state.sunLocal);
+    // [T7] night lights and ocean glint uniforms are set here
   }
 }

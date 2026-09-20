@@ -5,7 +5,10 @@ import { length, type Vec3 } from '../math';
 import { DEG } from '../units';
 import { BodyView, type RenderInfo } from './bodyView';
 import { nearPlane, orbitLineOpacity, toRenderSpace } from './cameraRelative';
+import { HI_RES_BUDGET, chooseHiRes, wantsHiTexture, type HiResCandidate } from './lod';
 import { OrbitLine } from './orbitLine';
+import { TextureManager } from './textureManager';
+import { loadTexture } from './textures';
 
 export type { RenderInfo } from './bodyView';
 
@@ -26,22 +29,25 @@ export class SolarScene {
   private readonly renderer: THREE.WebGLRenderer;
   private readonly camera = new THREE.PerspectiveCamera(FOV_DEG, 1, 1, FAR_M);
   private readonly scene = new THREE.Scene();
-  // decay 0 is a deliberate deviation from physical inverse-square falloff: with it Neptune would be about 900x dimmer than
-  // Earth. With no falloff outer planets stay readable, and the light direction still gives correct phases.
-  private readonly sunLight = new THREE.PointLight(0xffffff, Math.PI, 0, 0);
+  private readonly textures: TextureManager;
+  private readonly hiResAllowed: boolean;
   private readonly views = new Map<BodyId, BodyView>();
   private readonly orbits = new Map<BodyId, OrbitLine>();
   private width = 1;
   private height = 1;
   private lastInput: FrameInput | null = null;
+  private effectsEnabled = true;
+  private granted = new Set<BodyId>();
 
   constructor(canvas: HTMLCanvasElement, startDate: Date) {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, logarithmicDepthBuffer: true });
-    this.scene.add(new THREE.AmbientLight(0xffffff, 0.04), this.sunLight);
+    // 8K maps need a 8192 texture size; below that every body stays at 2K.
+    this.hiResAllowed = this.renderer.capabilities.maxTextureSize >= 8192;
+    this.textures = new TextureManager(this.hiResAllowed, loadTexture);
     for (const body of BODIES) {
-      const view = new BodyView(body);
+      const view = new BodyView(body, this.textures);
       this.views.set(body.id, view);
-      this.scene.add(view.mesh, view.sprite);
+      this.scene.add(...view.objects);
       if (body.kind === 'planet') {
         const orbit = new OrbitLine(body.id, body.color, startDate);
         this.orbits.set(body.id, orbit);
@@ -55,6 +61,19 @@ export class SolarScene {
   }
   get viewportHeight(): number {
     return this.height;
+  }
+
+  /** Turns the atmosphere, ring and cloud effects (and Earth's night lights and glint) on or off, for A/B checks. */
+  setEffectsEnabled(on: boolean): void {
+    this.effectsEnabled = on;
+  }
+  /** Bodies that held their 8K maps in the last frame. */
+  hiResBodies(): BodyId[] {
+    return [...this.granted];
+  }
+  /** Number of textures alive on the GPU. */
+  textureCount(): number {
+    return this.renderer.info.memory.textures;
   }
 
   resize(width: number, height: number): void {
@@ -77,14 +96,30 @@ export class SolarScene {
     this.camera.updateProjectionMatrix();
     this.camera.updateMatrixWorld();
 
-    const sunRel = toRenderSpace(input.frame.sun.position, input.cameraPos);
-    this.sunLight.position.set(sunRel[0], sunRel[1], sunRel[2]);
+    const sunPos = input.frame.sun.position;
+    const sunRel = toRenderSpace(sunPos, input.cameraPos);
 
+    // Pass 1: how big is each body? That decides which ones get their 8K maps this frame.
+    const candidates: HiResCandidate[] = [];
+    for (const body of BODIES) {
+      const view = this.views.get(body.id)!;
+      const m = view.measure(input.frame[body.id], input.cameraPos, this.fovYRad, this.height);
+      candidates.push({
+        id: body.id, screenPx: m.screenDiameterPx,
+        wants: wantsHiTexture(m.screenDiameterPx, view.isHiRes), hasHi: view.hasHiRes,
+      });
+    }
+    this.granted = this.hiResAllowed ? chooseHiRes(candidates, HI_RES_BUDGET) : new Set<BodyId>();
+
+    // Pass 2: update and draw.
     const info = new Map<BodyId, RenderInfo>();
     for (const body of BODIES) {
       const entry = input.frame[body.id];
       const view = this.views.get(body.id)!;
-      const result = view.update(entry, input.cameraPos, input.frame.sun.position, this.fovYRad, this.height);
+      const result = view.update(entry, {
+        cameraPos: input.cameraPos, sunPos, sunRel, fovYRad: this.fovYRad, viewportHeightPx: this.height,
+        hiRes: this.granted.has(body.id), effectsEnabled: this.effectsEnabled,
+      });
       info.set(body.id, result);
       const orbit = this.orbits.get(body.id);
       if (orbit) {
