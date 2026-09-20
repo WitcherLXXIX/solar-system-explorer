@@ -1,6 +1,7 @@
 import './style.css';
 import { CameraController, sunwardYaw, DEFAULT_PITCH, type FocusSource } from './camera/cameraController';
 import { SimClock } from './clock/clock';
+import { frameDelta } from './clock/frameDelta';
 import { getBody, type BodyId } from './catalog/bodies';
 import { computeFrame, type Frame } from './ephemeris/frame';
 import { SolarScene, type FrameInput } from './render/solarScene';
@@ -13,7 +14,7 @@ if (!isWebGL2Available()) {
   const fallback = document.querySelector<HTMLElement>('#fallback')!;
   fallback.hidden = false;
   fallback.textContent = 'This app needs WebGL 2, which your browser or graphics driver does not provide.';
-  canvas.hidden = true;
+  canvas.style.display = 'none';
   throw new Error('WebGL 2 unavailable');
 }
 
@@ -48,10 +49,10 @@ attachInput(canvas, {
 
 let frames = 0;
 let lastInput: FrameInput | null = null;
-let last = performance.now();
+let last: number | null = null;
 
 function loop(now: number): void {
-  const dt = Math.min((now - last) / 1000, 0.1);
+  const dt = frameDelta(now, last);
   last = now;
   clock.tick(dt);
   frame = computeFrame(clock.date);

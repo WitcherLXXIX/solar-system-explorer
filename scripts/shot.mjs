@@ -7,8 +7,11 @@ const out = args[0] ?? 'shot.png';
 const option = (name) => (args.includes(name) ? args[args.indexOf(name) + 1] : undefined);
 
 const { server, url } = await startServer();
-const { browser, page, errors } = await launchVisible();
+let browser;
 try {
+  const launched = await launchVisible();
+  browser = launched.browser;
+  const { page, errors } = launched;
   await page.goto(url);
   await page.waitForFunction(() => window.__solar && window.__solar.frames > 5, null, { timeout: 30000 });
   const fly = option('--fly');
@@ -27,8 +30,8 @@ try {
   await page.waitForTimeout(500);
   await page.screenshot({ path: out });
   console.log(`saved ${out}; console errors: ${errors.length ? errors.join(' | ') : 'none'}`);
-} finally {
   await page.waitForTimeout(Number(process.env.SHOT_HOLD_MS ?? 1500));
-  await browser.close();
+} finally {
+  await browser?.close();
   await server.close();
 }

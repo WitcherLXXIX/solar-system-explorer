@@ -30,6 +30,8 @@ export class OrbitLine {
       this.world = sampleOrbit(this.id, date, ORBIT_SAMPLES);
       this.sampledAtMs = date.getTime();
     }
+    this.line.visible = opacity > 0.001;
+    if (!this.line.visible) return; // nothing to draw: skip the vertex loop and buffer upload
     // Same mapping as eclipticToThree, inlined for the hot loop: subtract in float64, then cast.
     for (let i = 0; i < ORBIT_SAMPLES; i++) {
       const b = 3 * i;
@@ -38,7 +40,6 @@ export class OrbitLine {
       this.positions[b + 2] = -(this.world[b + 1]! - cameraPos[1]);
     }
     this.attribute.needsUpdate = true;
-    this.line.visible = opacity > 0.001;
     (this.line.material as THREE.LineBasicMaterial).opacity = opacity;
   }
 }
