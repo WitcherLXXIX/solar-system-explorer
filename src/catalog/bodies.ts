@@ -36,8 +36,8 @@ export interface RingSpec {
   /** Radii from the planet's centre, in metres. */
   innerM: number;
   outerM: number;
-  /** File stem in public/textures (.png): an RGBA strip whose x axis runs radially, inner to outer. */
-  alphaMap?: string;
+  /** File stems in public/textures (.png): an RGBA strip whose x axis runs radially, inner to outer, in two resolutions. */
+  alphaMap?: MapSlot;
   /** Procedural bands, used when `alphaMap` is absent. */
   bands?: readonly RingBand[];
   /** Colour for procedural rings (CSS hex). */
@@ -152,7 +152,7 @@ export const BODIES: readonly BodyData[] = [
       rayleigh: [1.8, 1.9, 2.2], mie: 0.5, mieG: 0.5, intensity: 2.4, tint: [1.0, 0.93, 0.72],
     },
     // D ring inner edge to F ring: the alpha strip spans exactly this range (Cassini Division at 71% of the width).
-    rings: { innerM: 66_900_000, outerM: 140_220_000, alphaMap: '8k_saturn_ring_alpha', tint: '#c9b99a' },
+    rings: { innerM: 66_900_000, outerM: 140_220_000, alphaMap: { lo: '2k_saturn_ring_alpha', hi: '8k_saturn_ring_alpha' }, tint: '#c9b99a' },
   },
   {
     id: 'uranus', name: 'Uranus', kind: 'planet', radiusM: 25_362_000, massKg: 8.68e25, rotationPeriodH: -17.24,

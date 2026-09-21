@@ -31,8 +31,9 @@ varying vec3 vPosL;
 void main() {
   float rNorm = length(vPosL.xz);
   float u = (rNorm - uInnerFrac) / (1.0 - uInnerFrac);
-  if (u <= 0.0 || u >= 1.0) discard;
+  // Sample before any discard: derivatives after a discard are undefined.
   vec4 tex = texture2D(uAlpha, vec2(u, 0.5));
+  if (u <= 0.0 || u >= 1.0) discard;
   float alpha = tex.a;
   if (alpha < 0.003) discard;
   vec3 base = mix(tex.rgb, uTint, uUseTint);
@@ -117,8 +118,9 @@ export class RingEffect implements BodyEffect {
 
   update(state: BodyRenderState): void {
     const ring = this.data.rings!;
+    // Always ask, so a hi-res strip is released as soon as the planet is no longer a close-up sphere.
     const alphaTexture = this.procedural
-      ?? this.textures.get(this.data.id, 'ring', { lo: ring.alphaMap! }, false);
+      ?? this.textures.get(this.data.id, 'ring', ring.alphaMap!, state.asSphere && state.hiRes);
     const ready = alphaTexture !== null;
     const active = state.effectsEnabled && state.asSphere && ready;
     const su = this.surface.uniforms;

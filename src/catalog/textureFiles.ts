@@ -17,7 +17,7 @@ export function allTextureFiles(): string[] {
     addSlot(body.maps.color);
     addSlot(body.maps.night);
     addSlot(body.maps.clouds);
-    if (body.rings?.alphaMap) stems.add(body.rings.alphaMap);
+    addSlot(body.rings?.alphaMap);
   }
   return [...stems].map(textureFileName);
 }

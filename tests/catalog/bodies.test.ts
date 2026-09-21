@@ -64,7 +64,7 @@ describe('phase 2a catalog data', () => {
   });
   it('attaches rings to the four giants, textured for Saturn and procedural for the rest', () => {
     expect(ids((b) => b.rings)).toEqual(['jupiter', 'saturn', 'uranus', 'neptune']);
-    expect(getBody('saturn').rings?.alphaMap).toBe('8k_saturn_ring_alpha');
+    expect(getBody('saturn').rings?.alphaMap).toEqual({ lo: '2k_saturn_ring_alpha', hi: '8k_saturn_ring_alpha' });
     for (const id of ['jupiter', 'uranus', 'neptune'] as const) {
       expect(getBody(id).rings?.alphaMap, id).toBeUndefined();
       expect(getBody(id).rings?.bands?.length ?? 0, id).toBeGreaterThan(0);
@@ -105,7 +105,7 @@ describe('textureFiles', () => {
       '2k_sun.jpg', '8k_sun.jpg', '2k_mercury.jpg', '8k_mercury.jpg', '4k_venus_atmosphere.jpg',
       '2k_earth_daymap.jpg', '8k_earth_daymap.jpg', '2k_earth_nightmap.jpg', '8k_earth_nightmap.jpg',
       '2k_earth_clouds.jpg', '8k_earth_clouds.jpg', '2k_mars.jpg', '8k_mars.jpg', '2k_jupiter.jpg', '8k_jupiter.jpg',
-      '2k_saturn.jpg', '8k_saturn.jpg', '8k_saturn_ring_alpha.png', '2k_uranus.jpg', '2k_neptune.jpg',
+      '2k_saturn.jpg', '8k_saturn.jpg', '2k_saturn_ring_alpha.png', '8k_saturn_ring_alpha.png', '2k_uranus.jpg', '2k_neptune.jpg',
     ]) {
       expect(files, f).toContain(f);
     }
