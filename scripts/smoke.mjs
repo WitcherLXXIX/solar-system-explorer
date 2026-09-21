@@ -82,6 +82,13 @@ try {
     if (!earthHi) await page.waitForTimeout(200);
   }
   check(earthHi, 'Earth holds its 8K maps at close range');
+  // Granted is not resident: wait until Earth's day, night and cloud 8K maps have actually loaded (a silent 8K failure fails here).
+  let earthHiTextures = 0;
+  for (let i = 0; i < 50 && earthHiTextures < 3; i++) {
+    earthHiTextures = await page.evaluate(() => window.__solar.hiTextureCount());
+    if (earthHiTextures < 3) await page.waitForTimeout(200);
+  }
+  check(earthHiTextures >= 3, `Earth's three 8K maps (day, night, clouds) are resident (${earthHiTextures} hi-res textures)`);
 
   let maxHi = 0;
   let maxHiTextures = 0;
@@ -93,7 +100,8 @@ try {
     maxTextures = Math.max(maxTextures, await page.evaluate(() => window.__solar.textureCount()));
   }
   check(maxHi <= 2, `at most two bodies held 8K maps at once (max ${maxHi})`);
-  // Earth holds three hi maps (day, night, clouds); one more body may add its colour map. A leak would exceed this.
+  // Earth holds three hi maps (day, night, clouds); one more body may add its colour map (Saturn adds its ring strip too,
+  // but never while Earth still holds its maps in this one-body sweep). A leak would exceed this.
   check(maxHiTextures <= 4, `resident hi-res textures stayed within budget (max ${maxHiTextures})`);
   check(maxTextures <= 45, `GPU texture count stayed bounded (max ${maxTextures})`);
 

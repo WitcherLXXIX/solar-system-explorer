@@ -133,6 +133,9 @@ export const BODIES: readonly BodyData[] = [
       heightFraction: 0.02, scaleHeightFraction: 0.008, mieScaleHeightFraction: 0.006,
       rayleigh: [1.9, 2.0, 2.3], mie: 0.5, mieG: 0.5, intensity: 2.2, tint: [1.0, 0.9, 0.7],
     },
+    // Procedural band opacities for Jupiter's rings are exaggerated for visibility (its real rings are far fainter
+    // still); real optical depths are lower. They also feed the ring-shadow term on the planet (strength 0.9), so the
+    // shadow is exaggerated to match.
     rings: {
       innerM: 92_000_000, outerM: 226_000_000, tint: '#8a7f73',
       bands: [
@@ -162,6 +165,8 @@ export const BODIES: readonly BodyData[] = [
       heightFraction: 0.02, scaleHeightFraction: 0.008, mieScaleHeightFraction: 0.006,
       rayleigh: [0.8, 2.0, 2.1], mie: 0.5, mieG: 0.5, intensity: 2.4, tint: [0.6, 1.0, 0.95],
     },
+    // Procedural band opacities for Uranus's rings are exaggerated 2-8x for visibility; real optical depths are
+    // lower. They also feed the ring-shadow term on the planet (strength 0.9), so the shadow is exaggerated to match.
     rings: {
       innerM: 41_000_000, outerM: 52_000_000, tint: '#a29b92',
       bands: [
@@ -186,6 +191,8 @@ export const BODIES: readonly BodyData[] = [
       heightFraction: 0.02, scaleHeightFraction: 0.008, mieScaleHeightFraction: 0.006,
       rayleigh: [0.5, 1.5, 2.8], mie: 0.5, mieG: 0.5, intensity: 3.0, tint: [0.45, 0.7, 1.0],
     },
+    // Procedural band opacities for Neptune's rings are exaggerated 2-8x for visibility; real optical depths are
+    // lower. They also feed the ring-shadow term on the planet (strength 0.9), so the shadow is exaggerated to match.
     rings: {
       innerM: 40_000_000, outerM: 64_000_000, tint: '#9a9791',
       bands: [
