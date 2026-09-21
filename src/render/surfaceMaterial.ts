@@ -1,4 +1,10 @@
 import * as THREE from 'three';
+import {
+  CLOUD_NIGHT_DIMMING, FRESNEL_EXPONENT, FRESNEL_F0, NIGHT_EDGE_HI, NIGHT_EDGE_LO, WATER_BLUE_HI, WATER_BLUE_LO,
+  WATER_LUMINANCE_HI, WATER_LUMINANCE_LO,
+} from './earthMath';
+import { glslFloat } from './glsl';
+import { RING_SHADOW_STRENGTH } from './ringMath';
 
 let dummy: THREE.DataTexture | null = null;
 /** A 1x1 white texture bound to every sampler that has no real map, so uniforms are always valid. */
@@ -27,7 +33,8 @@ void main() {
 }
 `;
 
-const FRAG = /* glsl */ `
+// The numbers interpolated below are exported by earthMath.ts and ringMath.ts, which mirror this shader in TypeScript.
+export const SURFACE_FRAG = /* glsl */ `
 #include <common>
 #include <logdepthbuf_pars_fragment>
 uniform sampler2D uMap;
@@ -64,7 +71,7 @@ void main() {
       if (s > 0.0) {
         vec3 hit = vPosB + uSunLocal * s;
         float u = (length(hit.xz) - uRingInner) / (uRingOuter - uRingInner);
-        if (u > 0.0 && u < 1.0) shadow = 1.0 - 0.9 * textureLod(uRingAlpha, vec2(u, 0.5), 0.0).a;
+        if (u > 0.0 && u < 1.0) shadow = 1.0 - ${glslFloat(RING_SHADOW_STRENGTH)} * textureLod(uRingAlpha, vec2(u, 0.5), 0.0).a;
       }
     }
     float diffuse = max(ndl, 0.0) * shadow;
@@ -73,17 +80,17 @@ void main() {
     // Cloud coverage is sampled once, outside the branches, and reused for the dimming and the glint suppression.
     float cloudCover = uHasClouds > 0.5 ? texture2D(uClouds, vUv).r : 0.0;
     if (uHasNight > 0.5) {
-      float night = 1.0 - smoothstep(-0.08, 0.12, ndl);
-      lit += texture2D(uNight, vUv).rgb * night * (1.0 - 0.85 * cloudCover);
+      float night = 1.0 - smoothstep(${glslFloat(NIGHT_EDGE_LO)}, ${glslFloat(NIGHT_EDGE_HI)}, ndl);
+      lit += texture2D(uNight, vUv).rgb * night * (1.0 - ${glslFloat(CLOUD_NIGHT_DIMMING)} * cloudCover);
     }
     // Ocean glint: Blinn-Phong on water, mask derived from the day map, suppressed by cloud (mirrors earthMath.waterMask/fresnel/glintIntensity).
     if (uGlint > 0.0 && ndl > 0.0) {
       float lum = dot(albedo, vec3(0.299, 0.587, 0.114));
-      float water = smoothstep(0.01, 0.06, albedo.b - max(albedo.r, albedo.g)) * (1.0 - smoothstep(0.5, 0.8, lum));
+      float water = smoothstep(${glslFloat(WATER_BLUE_LO)}, ${glslFloat(WATER_BLUE_HI)}, albedo.b - max(albedo.r, albedo.g)) * (1.0 - smoothstep(${glslFloat(WATER_LUMINANCE_LO)}, ${glslFloat(WATER_LUMINANCE_HI)}, lum));
       vec3 V = normalize(-vPosW); // the camera is the origin of render space
       vec3 H = normalize(uSunDir + V);
       float spec = pow(max(dot(N, H), 0.0), uShine);
-      float fres = 0.02 + 0.98 * pow(1.0 - max(dot(N, V), 0.0), 5.0); // Schlick, mirrors earthMath.fresnel
+      float fres = ${glslFloat(FRESNEL_F0)} + ${glslFloat(1 - FRESNEL_F0)} * pow(1.0 - max(dot(N, V), 0.0), ${glslFloat(FRESNEL_EXPONENT)}); // Schlick, mirrors earthMath.fresnel
       lit += vec3(uGlint * spec * water * fres * (1.0 - cloudCover));
     }
   }
@@ -97,7 +104,7 @@ export function createSurfaceMaterial(colorHex: string, unlit: boolean): THREE.S
   const white = dummyTexture();
   return new THREE.ShaderMaterial({
     vertexShader: VERT,
-    fragmentShader: FRAG,
+    fragmentShader: SURFACE_FRAG,
     uniforms: {
       uMap: { value: white },
       uHasMap: { value: 0 },

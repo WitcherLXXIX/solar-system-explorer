@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { planetShadowFactor, ringCrossingRadius, ringRadialFraction, ringShadowFactor } from '../../src/render/ringMath';
+import {
+  PLANET_SHADOW_PENUMBRA, RING_SHADOW_STRENGTH, planetShadowFactor, ringCrossingRadius, ringRadialFraction, ringShadowFactor,
+} from '../../src/render/ringMath';
 
 describe('planetShadowFactor', () => {
   const sun = [0, 0, 1] as const; // the Sun is toward +z
@@ -44,5 +46,18 @@ describe('ringShadowFactor', () => {
     const alphaAt = (u: number) => u; // more opaque farther out
     const near = ringShadowFactor([1, 0.5, 0], [0.6, -0.8, 0], 1.2, 2, alphaAt, 1);
     expect(near).toBeCloseTo(1 - (1.375 - 1.2) / 0.8, 12);
+  });
+});
+
+describe('shared shader constants', () => {
+  it('a fully opaque ring blocks exactly RING_SHADOW_STRENGTH of the light', () => {
+    // The sunward ray from this surface point crosses the ring plane (y = 0) at 1.2 radii, inside the ring (0.5 to 3).
+    const f = ringShadowFactor([0.6, 0.8, 0], [0.6, -0.8, 0], 0.5, 3, () => 1);
+    expect(f).toBeCloseTo(1 - RING_SHADOW_STRENGTH, 12);
+  });
+  it('the planet shadow edge is PLANET_SHADOW_PENUMBRA wide', () => {
+    const sun: [number, number, number] = [1, 0, 0];
+    expect(planetShadowFactor([-2, 1 - PLANET_SHADOW_PENUMBRA, 0], sun)).toBeCloseTo(0, 9);
+    expect(planetShadowFactor([-2, 1 + PLANET_SHADOW_PENUMBRA, 0], sun)).toBeCloseTo(1, 9);
   });
 });

@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import type { BodyData } from '../catalog/bodies';
 import type { BodyEffect, BodyRenderState } from './bodyView';
+import { glslFloat } from './glsl';
+import { PLANET_SHADOW_PENUMBRA } from './ringMath';
 import { buildRingProfile, RING_PROFILE_SAMPLES } from './ringProfile';
 import type { TextureManager } from './textureManager';
 
@@ -16,7 +18,7 @@ void main() {
 `;
 
 // Mirrors ringMath.ts: planetShadowFactor and the radial fraction.
-const FRAG = /* glsl */ `
+export const RING_FRAG = /* glsl */ `
 #include <common>
 #include <logdepthbuf_pars_fragment>
 uniform sampler2D uAlpha;     // radial strip: x runs inner to outer, RGB colour, A opacity
@@ -42,7 +44,7 @@ void main() {
   vec3 P = vPosL * uOuterOverR;
   float b = dot(P, uSunLocal);
   float dmin = sqrt(max(dot(P, P) - b * b, 0.0));
-  float shadow = b < 0.0 ? smoothstep(1.0 - 0.004, 1.0 + 0.004, dmin) : 1.0;
+  float shadow = b < 0.0 ? smoothstep(1.0 - ${glslFloat(PLANET_SHADOW_PENUMBRA)}, 1.0 + ${glslFloat(PLANET_SHADOW_PENUMBRA)}, dmin) : 1.0;
 
   // Lit on the Sun side; from the far side only light transmitted through the ring shows.
   float lit = 0.35 + 0.65 * smoothstep(0.0, 0.4, abs(uSunLocal.y));
@@ -95,7 +97,7 @@ export class RingEffect implements BodyEffect {
     geometry.rotateX(-Math.PI / 2); // RingGeometry faces +Z; the ring must lie in the local equatorial plane (normal +Y)
     this.material = new THREE.ShaderMaterial({
       vertexShader: VERT,
-      fragmentShader: FRAG,
+      fragmentShader: RING_FRAG,
       uniforms: {
         uAlpha: { value: this.procedural ?? new THREE.Texture() },
         uInnerFrac: { value: innerFrac },

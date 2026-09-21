@@ -46,6 +46,15 @@ export function viewSegment(camPos: Vec3, dir: Vec3, shellRadius: number): [numb
   return t1 > t0 ? [t0, t1] : null;
 }
 
+/** Mie extinction is this multiple of Mie scattering (a little absorption); atmosphere.ts interpolates it into the GLSL (tests/render/shaderConstants.test.ts checks it). */
+export const MIE_EXTINCTION_FACTOR = 1.1;
+
+/** Total extinction per unit path (RGB) from Rayleigh and Mie optical depths, mirroring `tau` in atmosphere.ts. */
+export function opticalExtinction(rayleigh: Vec3, mie: number, odRayleigh: number, odMie: number): Vec3 {
+  const m = mie * MIE_EXTINCTION_FACTOR * odMie;
+  return [rayleigh[0] * odRayleigh + m, rayleigh[1] * odRayleigh + m, rayleigh[2] * odRayleigh + m];
+}
+
 /** Distance from the sun axis (in body radii) at which the planet shadow starts to fade in; 1 is the hard cylinder edge. */
 export const SHADOW_EDGE = 0.985;
 

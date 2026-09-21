@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { density, opticalDepth, raySphere, SHADOW_EDGE, shadowFactor, useSkyPass, viewSegment } from '../../src/render/atmosphereMath';
+import {
+  density, MIE_EXTINCTION_FACTOR, opticalDepth, opticalExtinction, raySphere, SHADOW_EDGE, shadowFactor, useSkyPass, viewSegment,
+} from '../../src/render/atmosphereMath';
 
 describe('raySphere', () => {
   it('returns entry and exit distances for a ray that crosses the sphere', () => {
@@ -109,5 +111,16 @@ describe('useSkyPass', () => {
     expect(useSkyPass(1.0565, 1.0557, 0.0028)).toBe(true);
     // Once the camera is farther from the mesh than the near plane, the front faces are drawn normally.
     expect(useSkyPass(1.0557 + 0.0029, 1.0557, 0.0028)).toBe(false);
+  });
+});
+
+describe('opticalExtinction', () => {
+  it('adds Rayleigh per channel and Mie with the extinction factor (values computed by hand)', () => {
+    // Rayleigh (1, 2, 3) x od 0.5 = (0.5, 1, 1.5); Mie 10 x 1.1 x od 0.2 = 2.2 added to every channel.
+    const tau = opticalExtinction([1, 2, 3], 10, 0.5, 0.2);
+    expect(tau[0]).toBeCloseTo(2.7, 12);
+    expect(tau[1]).toBeCloseTo(3.2, 12);
+    expect(tau[2]).toBeCloseTo(3.7, 12);
+    expect(MIE_EXTINCTION_FACTOR).toBe(1.1);
   });
 });

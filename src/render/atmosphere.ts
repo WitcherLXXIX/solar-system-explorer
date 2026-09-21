@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 import type { BodyData } from '../catalog/bodies';
 import type { BodyEffect, BodyRenderState } from './bodyView';
-import { useSkyPass } from './atmosphereMath';
+import { MIE_EXTINCTION_FACTOR, SHADOW_EDGE, useSkyPass } from './atmosphereMath';
+import { glslFloat } from './glsl';
 import { ATMOSPHERE_MIN_PX } from './lod';
 
 const VERT = /* glsl */ `
@@ -17,7 +18,7 @@ void main() {
 `;
 
 // Mirrors atmosphereMath.ts: raySphere, viewSegment, density, opticalDepth. Units are body radii (planet radius 1).
-const FRAG = /* glsl */ `
+export const ATMOSPHERE_FRAG = /* glsl */ `
 #include <common>
 #include <logdepthbuf_pars_fragment>
 uniform vec3 uCamPos;     // camera relative to the body centre, in body radii
@@ -77,7 +78,7 @@ void main() {
     odM += dM;
     // Planet shadow, softened over 1.5% of the radius (SHADOW_EDGE in atmosphereMath.ts) to avoid a hard cut at the terminator.
     float sunB = dot(p, uSunDir);
-    float lit = sunB < 0.0 ? smoothstep(0.985, 1.0, sqrt(max(dot(p, p) - sunB * sunB, 0.0))) : 1.0;
+    float lit = sunB < 0.0 ? smoothstep(${glslFloat(SHADOW_EDGE)}, 1.0, sqrt(max(dot(p, p) - sunB * sunB, 0.0))) : 1.0;
     if (lit <= 0.0) continue;
     float lt = raySphere(p, uSunDir, uShell).y;
     float ldt = lt / float(LIGHT_STEPS);
@@ -89,13 +90,13 @@ void main() {
       lodR += dens(hq, uScaleH) * ldt;
       lodM += dens(hq, uMieScaleH) * ldt;
     }
-    vec3 tau = uRayleigh * (odR + lodR) + vec3(uMie * 1.1) * (odM + lodM);
+    vec3 tau = uRayleigh * (odR + lodR) + vec3(uMie * ${glslFloat(MIE_EXTINCTION_FACTOR)}) * (odM + lodM);
     vec3 att = exp(-tau);
     sumR += att * dR * lit;
     sumM += att * dM * lit;
   }
   vec3 color = (sumR * uRayleigh * phaseR + sumM * uMie * phaseM) * uIntensity * uTint;
-  vec3 tauView = uRayleigh * odR + vec3(uMie * 1.1) * odM;
+  vec3 tauView = uRayleigh * odR + vec3(uMie * ${glslFloat(MIE_EXTINCTION_FACTOR)}) * odM;
   float alpha = 1.0 - exp(-dot(tauView, vec3(1.0 / 3.0)));
   gl_FragColor = vec4(color, alpha); // premultiplied: the blend is ONE, ONE_MINUS_SRC_ALPHA
   #include <logdepthbuf_fragment>
@@ -119,7 +120,7 @@ export class AtmosphereEffect implements BodyEffect {
     this.shellRadius = 1 + spec.heightFraction;
     this.material = new THREE.ShaderMaterial({
       vertexShader: VERT,
-      fragmentShader: FRAG,
+      fragmentShader: ATMOSPHERE_FRAG,
       uniforms: {
         uCamPos: { value: new THREE.Vector3() },
         uSunDir: { value: new THREE.Vector3(0, 1, 0) },

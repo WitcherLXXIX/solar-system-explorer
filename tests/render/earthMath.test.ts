@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { fresnel, glintIntensity, nightFactor, waterMask } from '../../src/render/earthMath';
+import {
+  CLOUD_NIGHT_DIMMING, FRESNEL_F0, NIGHT_EDGE_HI, NIGHT_EDGE_LO, WATER_BLUE_HI, WATER_BLUE_LO, WATER_LUMINANCE_HI,
+  WATER_LUMINANCE_LO, fresnel, glintIntensity, nightFactor, nightLightFactor, waterMask,
+} from '../../src/render/earthMath';
 
 describe('nightFactor', () => {
   it('is 1 well into the night, 0 in full daylight, and eases across the terminator', () => {
@@ -67,5 +70,26 @@ describe('glintIntensity', () => {
     const grazing = glintIntensity(1, 60, 0.8, 0.8, 1, 0, 0.1);
     expect(nadir).toBeCloseTo(0.8 * 0.02, 12);
     expect(grazing).toBeGreaterThan(nadir * 20);
+  });
+});
+
+describe('shared shader constants', () => {
+  it('nightFactor is 1 at the low edge and 0 at the high edge', () => {
+    expect(nightFactor(NIGHT_EDGE_LO)).toBe(1);
+    expect(nightFactor(NIGHT_EDGE_HI)).toBe(0);
+  });
+  it('nightLightFactor dims by cloud cover: 15% left under full cloud', () => {
+    expect(nightLightFactor(-1, 0)).toBe(1);
+    expect(nightLightFactor(-1, 1)).toBeCloseTo(1 - CLOUD_NIGHT_DIMMING, 12);
+    expect(nightLightFactor(1, 0)).toBe(0);
+  });
+  it('fresnel starts at F0 looking straight on and reaches 1 at grazing incidence', () => {
+    expect(fresnel(1)).toBeCloseTo(FRESNEL_F0, 12);
+    expect(fresnel(0)).toBeCloseTo(1, 12);
+  });
+  it('waterMask uses the exported thresholds: blue-dominant dark pixels are water, bright ones are not', () => {
+    expect(waterMask(0.02, 0.05, 0.05 + WATER_BLUE_HI)).toBeGreaterThan(0.99);
+    expect(waterMask(0.5, 0.5, 0.5 + WATER_BLUE_LO / 2)).toBe(0);
+    expect(WATER_LUMINANCE_LO).toBeLessThan(WATER_LUMINANCE_HI);
   });
 });

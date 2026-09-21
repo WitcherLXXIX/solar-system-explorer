@@ -6,8 +6,14 @@ import { dot, smoothstep, type Vec3 } from '../math';
  * `sunLocal` is the unit direction toward the Sun in those axes.
  */
 
+// Both numbers are also interpolated into the GLSL (rings.ts and surfaceMaterial.ts); tests/render/shaderConstants.test.ts checks it.
+/** Half-width of the planet's shadow edge on the rings, in body radii. */
+export const PLANET_SHADOW_PENUMBRA = 0.004;
+/** How much of the sunlight a fully opaque ring blocks on the planet below it. */
+export const RING_SHADOW_STRENGTH = 0.9;
+
 /** Fraction of sunlight reaching `p` after the planet's shadow: 0 in the umbra, 1 outside, soft edge of half-width `penumbra`. */
-export function planetShadowFactor(p: Vec3, sunLocal: Vec3, penumbra = 0.004): number {
+export function planetShadowFactor(p: Vec3, sunLocal: Vec3, penumbra = PLANET_SHADOW_PENUMBRA): number {
   const b = dot(p, sunLocal);
   if (b >= 0) return 1; // the planet is not between this point and the Sun
   const dmin = Math.sqrt(Math.max(dot(p, p) - b * b, 0)); // closest approach of the sunward ray to the planet's centre
@@ -30,7 +36,7 @@ export function ringRadialFraction(r: number, inner: number, outer: number): num
 
 /** Fraction of sunlight that reaches a planet surface point after passing the ring (1 = unshadowed). */
 export function ringShadowFactor(
-  surface: Vec3, sunLocal: Vec3, inner: number, outer: number, alphaAt: (u: number) => number, strength = 0.9,
+  surface: Vec3, sunLocal: Vec3, inner: number, outer: number, alphaAt: (u: number) => number, strength = RING_SHADOW_STRENGTH,
 ): number {
   const r = ringCrossingRadius(surface, sunLocal);
   if (r === null) return 1;
