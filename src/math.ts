@@ -29,3 +29,31 @@ export function lerpAngle(a: number, b: number, t: number): number {
   const d = ((((b - a + Math.PI) % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI)) - Math.PI;
   return a + d * t;
 }
+
+/** m times v; `m` holds three COLUMNS, so the result is the columns weighted by the components of v. */
+export function mulMat3Vec(m: Mat3, v: Vec3): Vec3 {
+  return [
+    m[0][0] * v[0] + m[1][0] * v[1] + m[2][0] * v[2],
+    m[0][1] * v[0] + m[1][1] * v[1] + m[2][1] * v[2],
+    m[0][2] * v[0] + m[1][2] * v[1] + m[2][2] * v[2],
+  ];
+}
+
+/** a times b (b is applied first): each column of the product is `a` applied to the matching column of `b`. */
+export function mulMat3(a: Mat3, b: Mat3): Mat3 {
+  return [mulMat3Vec(a, b[0]), mulMat3Vec(a, b[1]), mulMat3Vec(a, b[2])];
+}
+
+/** Rotates a vector by `t` radians counter-clockwise about the z axis. */
+export function rotZ(v: Vec3, t: number): Vec3 {
+  const c = Math.cos(t);
+  const s = Math.sin(t);
+  return [c * v[0] - s * v[1], s * v[0] + c * v[1], v[2]];
+}
+
+/** Rotates a vector by `t` radians counter-clockwise about the x axis. */
+export function rotX(v: Vec3, t: number): Vec3 {
+  const c = Math.cos(t);
+  const s = Math.sin(t);
+  return [v[0], c * v[1] - s * v[2], s * v[1] + c * v[2]];
+}

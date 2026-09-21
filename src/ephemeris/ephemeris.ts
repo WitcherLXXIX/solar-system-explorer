@@ -3,7 +3,7 @@ import {
   RotationAxis, SiderealTime, Vector,
 } from 'astronomy-engine';
 import type { BodyId } from '../catalog/bodies';
-import type { Mat3, Vec3 } from '../math';
+import { rotX, rotZ, type Mat3, type Vec3 } from '../math';
 import { AU_M, DAY_S, DEG } from '../units';
 
 const AE_BODY: Record<BodyId, Body> = {
@@ -24,18 +24,6 @@ const EQJ_TO_ECL = Rotation_EQJ_ECL();
 export function bodyPosition(id: BodyId, date: Date): Vec3 {
   const v = RotateVector(EQJ_TO_ECL, HelioVector(AE_BODY[id], date));
   return [v.x * AU_M, v.y * AU_M, v.z * AU_M];
-}
-
-function rotZ(v: Vec3, t: number): Vec3 {
-  const c = Math.cos(t);
-  const s = Math.sin(t);
-  return [c * v[0] - s * v[1], s * v[0] + c * v[1], v[2]];
-}
-
-function rotX(v: Vec3, t: number): Vec3 {
-  const c = Math.cos(t);
-  const s = Math.sin(t);
-  return [v[0], c * v[1] - s * v[2], s * v[1] + c * v[2]];
 }
 
 /**
