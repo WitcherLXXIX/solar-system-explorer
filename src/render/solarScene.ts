@@ -123,7 +123,7 @@ export class SolarScene {
       const view = this.views.get(body.id)!;
       const result = view.update(entry, {
         cameraPos: input.cameraPos, sunPos, sunRel, fovYRad: this.fovYRad, viewportHeightPx: this.height,
-        hiRes: this.granted.has(body.id), effectsEnabled: this.effectsEnabled,
+        hiRes: this.granted.has(body.id), effectsEnabled: this.effectsEnabled, nearM: this.camera.near,
       });
       info.set(body.id, result);
       const orbit = this.orbits.get(body.id);

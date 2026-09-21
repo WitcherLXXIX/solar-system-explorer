@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { density, opticalDepth, raySphere, SHADOW_EDGE, shadowFactor, viewSegment } from '../../src/render/atmosphereMath';
+import { density, opticalDepth, raySphere, SHADOW_EDGE, shadowFactor, useSkyPass, viewSegment } from '../../src/render/atmosphereMath';
 
 describe('raySphere', () => {
   it('returns entry and exit distances for a ray that crosses the sphere', () => {
@@ -96,5 +96,18 @@ describe('shadowFactor', () => {
     // Perpendicular distance 1.0 from the axis, behind the planet: lit. Perpendicular distance 0.9: dark.
     expect(shadowFactor([-0.3, 1.0, -0.4], s)).toBe(1);
     expect(shadowFactor([-0.3, 0.9, -0.4], s)).toBe(0);
+  });
+});
+
+describe('useSkyPass', () => {
+  it('is true inside the shell mesh and false well outside it', () => {
+    expect(useSkyPass(1.03, 1.0557, 0.0001)).toBe(true);
+    expect(useSkyPass(1.2, 1.0557, 0.01)).toBe(false);
+  });
+  it('stays true while the near plane would clip the mesh front faces just outside it', () => {
+    // 5% of the altitude is the near plane: at 360 km over Earth (radii: 1.0565) it is about 18 km = 0.0028 radii.
+    expect(useSkyPass(1.0565, 1.0557, 0.0028)).toBe(true);
+    // Once the camera is farther from the mesh than the near plane, the front faces are drawn normally.
+    expect(useSkyPass(1.0557 + 0.0029, 1.0557, 0.0028)).toBe(false);
   });
 });

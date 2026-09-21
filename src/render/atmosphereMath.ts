@@ -61,3 +61,13 @@ export function shadowFactor(p: Vec3, sunDir: Vec3, edge = SHADOW_EDGE): number 
   const x = Math.min(Math.max((perp - edge) / (1 - edge), 0), 1);
   return x * x * (3 - 2 * x);
 }
+
+/**
+ * Whether the shell mesh is drawn as a sky (back faces, no depth test) rather than as haze in front (front faces).
+ * All distances are in body radii. Inside the mesh the front faces are behind the camera; just outside it they lie
+ * closer than the camera's near plane and are clipped, which would make the whole atmosphere vanish in a thin band
+ * of altitudes. The sky pass is exact from anywhere (the shader works from the ray alone), so it is used there too.
+ */
+export function useSkyPass(cameraDistance: number, meshRadius: number, nearPlane: number): boolean {
+  return cameraDistance < meshRadius + nearPlane;
+}

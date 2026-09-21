@@ -42,6 +42,8 @@ export interface BodyRenderState {
   effectsEnabled: boolean;
   /** True when this body holds its 8K maps this frame. */
   hiRes: boolean;
+  /** The camera's near plane this frame, in metres. */
+  nearM: number;
 }
 
 export interface BodyEffect {
@@ -58,6 +60,7 @@ export interface BodyUpdateContext {
   viewportHeightPx: number;
   hiRes: boolean;
   effectsEnabled: boolean;
+  nearM: number;
 }
 
 const farGeometry = new THREE.SphereGeometry(1, 128, 96);
@@ -191,7 +194,7 @@ export class BodyView {
     const state: BodyRenderState = {
       data: this.data, rel, quaternion: this.mesh.quaternion, sunDir: this.sunDir, camRelBody: this.camRelBody,
       sunLocal: this.sunLocal, camLocal: this.camLocal, screenDiameterPx, asSphere,
-      effectsEnabled: ctx.effectsEnabled, hiRes: ctx.hiRes,
+      effectsEnabled: ctx.effectsEnabled, hiRes: ctx.hiRes, nearM: ctx.nearM,
     };
     if (asSphere) this.updateSurface(state);
     for (const effect of this.effects) effect.update(state);

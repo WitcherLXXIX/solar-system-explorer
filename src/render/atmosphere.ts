@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import type { BodyData } from '../catalog/bodies';
 import type { BodyEffect, BodyRenderState } from './bodyView';
+import { useSkyPass } from './atmosphereMath';
 import { ATMOSPHERE_MIN_PX } from './lod';
 
 const VERT = /* glsl */ `
@@ -154,11 +155,14 @@ export class AtmosphereEffect implements BodyEffect {
     const u = this.material.uniforms;
     u.uCamPos.value.copy(state.camRelBody);
     u.uSunDir.value.copy(state.sunDir);
-    // From outside the mesh draw its front faces (haze in front of the disc); from inside it, its back faces (sky).
-    // The test is against the overscanned mesh, not the analytic shell: between the two radii the camera is already
-    // inside the mesh, where front faces are behind it. Inside the mesh the back faces lie beyond the planet, so the
-    // depth test would reject them; the shader clips against the planet analytically, so it is switched off there.
-    const insideMesh = state.camRelBody.length() < this.shellRadius * SHELL_OVERSCAN;
+    // From outside the mesh draw its front faces (haze in front of the disc); from inside it, or so close outside it
+    // that the near plane would clip those faces, draw its back faces (sky). The test is against the overscanned mesh,
+    // not the analytic shell: between the two radii the camera is already inside the mesh, where front faces are behind
+    // it. In the sky pass the back faces lie beyond the planet, so the depth test would reject them; the shader clips
+    // against the planet analytically, so it is switched off there.
+    const insideMesh = useSkyPass(
+      state.camRelBody.length(), this.shellRadius * SHELL_OVERSCAN, state.nearM / state.data.radiusM,
+    );
     this.material.side = insideMesh ? THREE.BackSide : THREE.FrontSide;
     this.material.depthTest = !insideMesh;
   }
