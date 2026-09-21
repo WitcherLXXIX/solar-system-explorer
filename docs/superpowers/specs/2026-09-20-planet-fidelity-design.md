@@ -17,7 +17,7 @@ Phase 2 was split during brainstorming. This spec covers **2a, planet fidelity**
 | Topic | Decision |
 |---|---|
 | Close-up approach | Static 8K maps bundled locally (downloaded by script, works offline). No streamed tiles or terrain in 2a. |
-| Minimum altitude | Drops from 2% to 0.2% of the focused body's radius (about 13 km at Earth). The floor is what the mesh detail and camera precision allow, not what the texture resolves: an 8K map is about 4.9 km per texel at Earth's equator, so the map is magnified below roughly 1,000-1,300 km altitude (about one texel per pixel at 720p and a 50 degree field of view). Real terrain detail there needs streamed tiles, which is out of scope. |
+| Minimum altitude | Drops from 2% to 0.2% of the focused body's radius (about 13 km at Earth). The floor is what the mesh detail and camera precision allow, not what the texture resolves: an 8K map is about 4.9 km per texel at Earth's equator, so the map is magnified below roughly 3,800 km altitude (about one texel per pixel at 720p and a 50 degree field of view); at 1,000 km one texel already spans about 4 screen pixels. Real terrain detail there needs streamed tiles, which is out of scope. |
 | Renderer | Extend the phase 1 mesh renderer (approach A). Each body's surface renderer sits behind a small interface so a ray-cast or streamed-tile backend can replace it later without touching the camera, HUD or ephemeris. |
 | Effects in scope | Atmospheres for every planet that has one; Saturn's rings with shadows; faint rings for Jupiter, Uranus and Neptune; Earth night lights, clouds and ocean glint. |
 | Texture source | Solar System Scope, CC BY 4.0 (same as phase 1). |
