@@ -11,19 +11,19 @@ describe('catalog', () => {
     expect(new Set(BODIES.map((b) => b.id)).size).toBe(BODIES.length);
     for (const b of BODIES) {
       expect(b.radiusM, b.id).toBeGreaterThan(0);
-      expect(b.massKg, b.id).toBeGreaterThan(0);
-      expect(b.surfaceGravity, b.id).toBeGreaterThan(0);
-      expect(b.meanTempK, b.id).toBeGreaterThan(0);
+      expect(b.massKg ?? 1, b.id).toBeGreaterThan(0);
+      expect(b.surfaceGravity ?? 1, b.id).toBeGreaterThan(0);
+      expect(b.meanTempK ?? 1, b.id).toBeGreaterThan(0);
       expect(Number.isFinite(b.rotationPeriodH), b.id).toBe(true);
       expect(b.rotationPeriodH, b.id).not.toBe(0);
-      expect(b.maps.color.lo.length, b.id).toBeGreaterThan(0);
+      expect(b.maps.color?.lo.length ?? 1, b.id).toBeGreaterThan(0);
       expect(b.source.length, b.id).toBeGreaterThan(0);
     }
   });
   it('matches well-known values', () => {
     expect(getBody('earth').radiusM).toBeCloseTo(6_371_000, -3);
     expect(getBody('sun').radiusM).toBeCloseTo(695_700_000, -3);
-    expect(getBody('jupiter').massKg / 1.898e27).toBeCloseTo(1, 2);
+    expect(getBody('jupiter').massKg! / 1.898e27).toBeCloseTo(1, 2);
     expect(getBody('sun').kind).toBe('star');
     expect(getBody('earth').kind).toBe('planet');
   });
@@ -38,10 +38,10 @@ describe('phase 2a catalog data', () => {
   const ids = (pick: (b: (typeof BODIES)[number]) => unknown): BodyId[] => BODIES.filter((b) => pick(b)).map((b) => b.id);
 
   it('has 8K maps exactly where the source provides them', () => {
-    expect(ids((b) => b.maps.color.hi)).toEqual(['sun', 'mercury', 'earth', 'mars', 'jupiter', 'saturn']);
+    expect(ids((b) => b.maps.color?.hi)).toEqual(['sun', 'mercury', 'earth', 'mars', 'jupiter', 'saturn']);
   });
   it('uses the 4K cloud-top map as the Venus base map', () => {
-    expect(getBody('venus').maps.color.lo).toBe('4k_venus_atmosphere');
+    expect(getBody('venus').maps.color?.lo).toBe('4k_venus_atmosphere');
   });
   it('gives Earth night and cloud maps with 2K and 8K tiers', () => {
     const earth = getBody('earth');

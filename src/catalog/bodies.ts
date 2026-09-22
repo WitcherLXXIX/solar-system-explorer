@@ -1,4 +1,13 @@
-export type BodyId = 'sun' | 'mercury' | 'venus' | 'earth' | 'mars' | 'jupiter' | 'saturn' | 'uranus' | 'neptune';
+export type BodyId =
+  | 'sun' | 'mercury' | 'venus' | 'earth' | 'mars' | 'jupiter' | 'saturn' | 'uranus' | 'neptune'
+  | 'moon' | 'phobos' | 'deimos' | 'io' | 'europa' | 'ganymede' | 'callisto'
+  | 'mimas' | 'enceladus' | 'tethys' | 'dione' | 'rhea' | 'titan' | 'iapetus'
+  | 'miranda' | 'ariel' | 'umbriel' | 'titania' | 'oberon' | 'triton' | 'pluto' | 'charon'
+  | 'ceres' | 'eris' | 'haumea' | 'makemake';
+
+export type BodyKind = 'star' | 'planet' | 'moon' | 'dwarf';
+/** Where a body's position comes from: astronomy-engine, or the bundled mean elements in `orbits.ts`. */
+export type OrbitSource = 'astronomy-engine' | 'elements';
 
 /** One map at two resolutions: `lo` (2K, always resident) and an optional `hi` (8K, loaded only for nearby bodies). */
 export interface MapSlot {
@@ -53,19 +62,29 @@ export interface OceanGlint {
 export interface BodyData {
   id: BodyId;
   name: string;
-  kind: 'star' | 'planet';
+  kind: BodyKind;
+  /** What the body orbits: null for the Sun, the Sun for planets and dwarf planets, the planet for a moon (Pluto for Charon). */
+  parent: BodyId | null;
+  orbitSource: OrbitSource | null;
+  /** Sidereal orbital period around the parent in days (moons and dwarf planets; planets use astronomy-engine). */
+  orbitPeriodDays?: number;
   /** Volumetric mean radius. */
   radiusM: number;
-  massKg: number;
+  /** Null when no mass/GM figure exists on any allowed source domain (e.g. Eris, Haumea, Makemake). */
+  massKg: number | null;
   /** Sidereal rotation period in hours; negative means retrograde. Info panel only. */
   rotationPeriodH: number;
   /** Obliquity to orbit in degrees (Sun: to the ecliptic). Info panel only. */
-  axialTiltDeg: number;
-  surfaceGravity: number;
-  meanTempK: number;
+  axialTiltDeg: number | null;
+  /** Null when massKg is null, since it is derived from mass. */
+  surfaceGravity: number | null;
+  meanTempK: number | null;
   tempNote?: string;
   /** File stems in public/textures (without extension). */
-  maps: { color: MapSlot; night?: MapSlot; clouds?: MapSlot };
+  /** A body with no `color` map has no usable global map and is drawn in its plain `color` with Lambert shading. */
+  maps: { color?: MapSlot; night?: MapSlot; clouds?: MapSlot };
+  /** Attribution for the maps, shown in the info panel and the README. */
+  mapCredit?: string;
   atmosphere?: AtmosphereSpec;
   rings?: RingSpec;
   oceanGlint?: OceanGlint;
@@ -78,20 +97,20 @@ export interface BodyData {
 
 const PLANET_SOURCE = 'NASA Planetary Fact Sheet (nssdc.gsfc.nasa.gov/planetary/factsheet)';
 
-export const BODIES: readonly BodyData[] = [
+export const CORE_BODIES: readonly BodyData[] = [
   {
-    id: 'sun', name: 'Sun', kind: 'star', radiusM: 695_700_000, massKg: 1.9885e30, rotationPeriodH: 609.12,
+    id: 'sun', name: 'Sun', kind: 'star', parent: null, orbitSource: null, radiusM: 695_700_000, massKg: 1.9885e30, rotationPeriodH: 609.12,
     axialTiltDeg: 7.25, surfaceGravity: 274.0, meanTempK: 5772, tempNote: 'effective temperature of the photosphere',
     maps: { color: { lo: '2k_sun', hi: '8k_sun' } }, color: '#ffd27a',
     source: 'NASA Sun Fact Sheet; IAU 2015 nominal solar values',
   },
   {
-    id: 'mercury', name: 'Mercury', kind: 'planet', radiusM: 2_439_400, massKg: 3.30e23, rotationPeriodH: 1407.6,
+    id: 'mercury', name: 'Mercury', kind: 'planet', parent: 'sun', orbitSource: 'astronomy-engine', radiusM: 2_439_400, massKg: 3.30e23, rotationPeriodH: 1407.6,
     axialTiltDeg: 0.034, surfaceGravity: 3.7, meanTempK: 440.15,
     maps: { color: { lo: '2k_mercury', hi: '8k_mercury' } }, color: '#a8a29e', source: PLANET_SOURCE,
   },
   {
-    id: 'venus', name: 'Venus', kind: 'planet', radiusM: 6_051_800, massKg: 4.87e24, rotationPeriodH: -5832.5,
+    id: 'venus', name: 'Venus', kind: 'planet', parent: 'sun', orbitSource: 'astronomy-engine', radiusM: 6_051_800, massKg: 4.87e24, rotationPeriodH: -5832.5,
     axialTiltDeg: 177.4, surfaceGravity: 8.9, meanTempK: 737.15,
     // The surface is invisible under the clouds, so the base map is the cloud-top image.
     maps: { color: { lo: '4k_venus_atmosphere' } }, color: '#e3c07a', source: PLANET_SOURCE,
@@ -101,7 +120,7 @@ export const BODIES: readonly BodyData[] = [
     },
   },
   {
-    id: 'earth', name: 'Earth', kind: 'planet', radiusM: 6_371_000, massKg: 5.97e24, rotationPeriodH: 23.9345,
+    id: 'earth', name: 'Earth', kind: 'planet', parent: 'sun', orbitSource: 'astronomy-engine', radiusM: 6_371_000, massKg: 5.97e24, rotationPeriodH: 23.9345,
     axialTiltDeg: 23.4, surfaceGravity: 9.8, meanTempK: 288.15,
     maps: {
       color: { lo: '2k_earth_daymap', hi: '8k_earth_daymap' },
@@ -117,7 +136,7 @@ export const BODIES: readonly BodyData[] = [
     },
   },
   {
-    id: 'mars', name: 'Mars', kind: 'planet', radiusM: 3_389_500, massKg: 6.42e23, rotationPeriodH: 24.6229,
+    id: 'mars', name: 'Mars', kind: 'planet', parent: 'sun', orbitSource: 'astronomy-engine', radiusM: 3_389_500, massKg: 6.42e23, rotationPeriodH: 24.6229,
     axialTiltDeg: 25.2, surfaceGravity: 3.7, meanTempK: 208.15,
     maps: { color: { lo: '2k_mars', hi: '8k_mars' } }, color: '#c1440e', source: PLANET_SOURCE,
     atmosphere: {
@@ -126,7 +145,7 @@ export const BODIES: readonly BodyData[] = [
     },
   },
   {
-    id: 'jupiter', name: 'Jupiter', kind: 'planet', radiusM: 69_911_000, massKg: 1.898e27, rotationPeriodH: 9.925,
+    id: 'jupiter', name: 'Jupiter', kind: 'planet', parent: 'sun', orbitSource: 'astronomy-engine', radiusM: 69_911_000, massKg: 1.898e27, rotationPeriodH: 9.925,
     axialTiltDeg: 3.1, surfaceGravity: 23.1, meanTempK: 163.15, tempNote: 'at the 1 bar level',
     maps: { color: { lo: '2k_jupiter', hi: '8k_jupiter' } }, color: '#c99b6d', source: PLANET_SOURCE,
     atmosphere: {
@@ -147,7 +166,7 @@ export const BODIES: readonly BodyData[] = [
     },
   },
   {
-    id: 'saturn', name: 'Saturn', kind: 'planet', radiusM: 58_232_000, massKg: 5.68e26, rotationPeriodH: 10.656,
+    id: 'saturn', name: 'Saturn', kind: 'planet', parent: 'sun', orbitSource: 'astronomy-engine', radiusM: 58_232_000, massKg: 5.68e26, rotationPeriodH: 10.656,
     axialTiltDeg: 26.7, surfaceGravity: 9.0, meanTempK: 133.15, tempNote: 'at the 1 bar level',
     maps: { color: { lo: '2k_saturn', hi: '8k_saturn' } }, color: '#e0c98f', source: PLANET_SOURCE,
     atmosphere: {
@@ -158,7 +177,7 @@ export const BODIES: readonly BodyData[] = [
     rings: { innerM: 66_900_000, outerM: 140_220_000, alphaMap: { lo: '2k_saturn_ring_alpha', hi: '8k_saturn_ring_alpha' }, tint: '#c9b99a' },
   },
   {
-    id: 'uranus', name: 'Uranus', kind: 'planet', radiusM: 25_362_000, massKg: 8.68e25, rotationPeriodH: -17.24,
+    id: 'uranus', name: 'Uranus', kind: 'planet', parent: 'sun', orbitSource: 'astronomy-engine', radiusM: 25_362_000, massKg: 8.68e25, rotationPeriodH: -17.24,
     axialTiltDeg: 97.8, surfaceGravity: 8.7, meanTempK: 78.15, tempNote: 'at the 1 bar level',
     maps: { color: { lo: '2k_uranus' } }, color: '#9fd8e0', source: PLANET_SOURCE,
     atmosphere: {
@@ -184,7 +203,7 @@ export const BODIES: readonly BodyData[] = [
     },
   },
   {
-    id: 'neptune', name: 'Neptune', kind: 'planet', radiusM: 24_622_000, massKg: 1.02e26, rotationPeriodH: 16.11,
+    id: 'neptune', name: 'Neptune', kind: 'planet', parent: 'sun', orbitSource: 'astronomy-engine', radiusM: 24_622_000, massKg: 1.02e26, rotationPeriodH: 16.11,
     axialTiltDeg: 28.3, surfaceGravity: 11.0, meanTempK: 73.15, tempNote: 'at the 1 bar level',
     maps: { color: { lo: '2k_neptune' } }, color: '#4a6fe0', source: PLANET_SOURCE,
     atmosphere: {
@@ -205,6 +224,9 @@ export const BODIES: readonly BodyData[] = [
     },
   },
 ];
+
+/** Every body in the app, parents before children. Equal to CORE_BODIES until the satellites are wired in (Task 7). */
+export const BODIES: readonly BodyData[] = CORE_BODIES;
 
 export const BODY_IDS: readonly BodyId[] = BODIES.map((b) => b.id);
 

@@ -110,7 +110,7 @@ export class BodyView {
     private readonly data: BodyData,
     private readonly textures: TextureManager,
   ) {
-    this.hasHiRes = data.maps.color.hi !== undefined;
+    this.hasHiRes = data.maps.color?.hi !== undefined;
     this.surface = createSurfaceMaterial(data.color, data.kind === 'star');
     this.mesh = new THREE.Mesh(farGeometry, this.surface);
     this.mesh.scale.setScalar(data.radiusM);
@@ -207,14 +207,14 @@ export class BodyView {
    */
   private releaseHiRes(): void {
     const { maps, id } = this.data;
-    this.textures.get(id, 'color', maps.color, false);
+    if (maps.color) this.textures.get(id, 'color', maps.color, false);
     if (maps.night) this.textures.get(id, 'night', maps.night, false);
     if (maps.clouds) this.textures.get(id, 'clouds', maps.clouds, false);
   }
 
   private updateSurface(state: BodyRenderState): void {
     const u = this.surface.uniforms;
-    const color = this.textures.get(this.data.id, 'color', this.data.maps.color, state.hiRes);
+    const color = this.data.maps.color ? this.textures.get(this.data.id, 'color', this.data.maps.color, state.hiRes) : null;
     u.uMap.value = color ?? dummyTexture();
     u.uHasMap.value = color ? 1 : 0;
     u.uSunDir.value.copy(state.sunDir);

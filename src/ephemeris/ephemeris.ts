@@ -6,7 +6,8 @@ import type { BodyId } from '../catalog/bodies';
 import { rotX, rotZ, type Mat3, type Vec3 } from '../math';
 import { AU_M, DAY_S, DEG } from '../units';
 
-const AE_BODY: Record<BodyId, Body> = {
+// Task 7 replaces this mapping; until then only the Sun and the eight planets have a position.
+const AE_BODY_MAP: Partial<Record<BodyId, Body>> = {
   sun: Body.Sun,
   mercury: Body.Mercury,
   venus: Body.Venus,
@@ -18,11 +19,17 @@ const AE_BODY: Record<BodyId, Body> = {
   neptune: Body.Neptune,
 };
 
+function aeBody(id: BodyId): Body {
+  const body = AE_BODY_MAP[id];
+  if (body === undefined) throw new Error(`no astronomy-engine body for ${id} yet`);
+  return body;
+}
+
 const EQJ_TO_ECL = Rotation_EQJ_ECL();
 
 /** Heliocentric position in metres, ecliptic J2000 frame. */
 export function bodyPosition(id: BodyId, date: Date): Vec3 {
-  const v = RotateVector(EQJ_TO_ECL, HelioVector(AE_BODY[id], date));
+  const v = RotateVector(EQJ_TO_ECL, HelioVector(aeBody(id), date));
   return [v.x * AU_M, v.y * AU_M, v.z * AU_M];
 }
 
@@ -55,7 +62,7 @@ export function bodyOrientation(id: BodyId, date: Date): Mat3 {
     return [column([1, 0, 0]), column([0, 1, 0]), column([0, 0, 1])];
   }
 
-  const axis = RotationAxis(AE_BODY[id], date);
+  const axis = RotationAxis(aeBody(id), date);
   const alpha = axis.ra * 15 * DEG; // astronomy-engine gives right ascension in sidereal hours
   const delta = axis.dec * DEG;
   const w = axis.spin * DEG;
@@ -65,7 +72,7 @@ export function bodyOrientation(id: BodyId, date: Date): Mat3 {
 }
 
 export function orbitalPeriodDays(id: BodyId): number | null {
-  return id === 'sun' ? null : PlanetOrbitalPeriod(AE_BODY[id]);
+  return id === 'sun' ? null : PlanetOrbitalPeriod(aeBody(id));
 }
 
 /** `count` positions (xyz triples, metres) evenly spaced in time over one orbital period from `start`. */

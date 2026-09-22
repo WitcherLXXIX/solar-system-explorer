@@ -29,12 +29,12 @@ export function createInfoPanel(root: HTMLElement): { setBody(id: BodyId): void;
       kind.textContent = body.kind === 'star' ? 'Star (G2V)' : 'Planet';
       list.replaceChildren();
       addRow('Radius', formatRadius(body.radiusM), 'Volumetric mean radius');
-      addRow('Mass', formatMass(body.massKg));
+      addRow('Mass', body.massKg === null ? '—' : formatMass(body.massKg));
       addRow('Orbital period', period === null ? 'n/a' : formatPeriodDays(period), 'From astronomy-engine (VSOP87)');
       addRow('Day length', formatHours(body.rotationPeriodH), 'Sidereal rotation period');
-      addRow('Axial tilt', `${body.axialTiltDeg}°`);
-      addRow('Surface gravity', `${body.surfaceGravity.toFixed(1)} m/s²`);
-      addRow('Mean temperature', formatTemp(body.meanTempK), body.tempNote);
+      addRow('Axial tilt', body.axialTiltDeg === null ? '—' : `${body.axialTiltDeg}°`);
+      addRow('Surface gravity', body.surfaceGravity === null ? '—' : `${body.surfaceGravity.toFixed(1)} m/s²`);
+      addRow('Mean temperature', body.meanTempK === null ? '—' : formatTemp(body.meanTempK), body.tempNote);
       sunDistanceValue = addRow('Distance from Sun', '');
       foot.textContent = `Source: ${body.source}`;
     },
