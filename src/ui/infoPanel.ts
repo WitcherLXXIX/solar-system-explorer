@@ -3,6 +3,7 @@ import { orbitalPeriodDays } from '../ephemeris/ephemeris';
 import {
   formatDistance, formatHours, formatMass, formatPeriodDays, formatRadius, formatTemp,
 } from '../format/format';
+import { kindLabel, mapNote } from './bodyText';
 import { el } from './dom';
 
 export function createInfoPanel(root: HTMLElement): { setBody(id: BodyId): void; update(sunDistanceM: number | null): void } {
@@ -10,7 +11,8 @@ export function createInfoPanel(root: HTMLElement): { setBody(id: BodyId): void;
   const kind = el('p', 'dim');
   const list = el('dl', 'facts');
   const foot = el('p', 'dim small');
-  root.append(heading, kind, list, foot);
+  const mapFoot = el('p', 'dim small');
+  root.append(heading, kind, list, foot, mapFoot);
   let sunDistanceValue: HTMLElement | null = null;
 
   const addRow = (label: string, value: string, title?: string): HTMLElement => {
@@ -25,18 +27,24 @@ export function createInfoPanel(root: HTMLElement): { setBody(id: BodyId): void;
     setBody(id) {
       const body = getBody(id);
       const period = orbitalPeriodDays(id);
+      const parentName = body.parent !== null && body.parent !== 'sun' ? getBody(body.parent).name : null;
+      const periodNote =
+        body.kind === 'moon' ? `Sidereal period around ${parentName ?? 'its parent'}`
+        : body.kind === 'dwarf' ? 'Sidereal period around the Sun'
+        : 'From astronomy-engine (VSOP87)';
       heading.textContent = body.name;
-      kind.textContent = body.kind === 'star' ? 'Star (G2V)' : 'Planet';
+      kind.textContent = kindLabel(body.kind, parentName);
       list.replaceChildren();
       addRow('Radius', formatRadius(body.radiusM), 'Volumetric mean radius');
       addRow('Mass', body.massKg === null ? '—' : formatMass(body.massKg));
-      addRow('Orbital period', period === null ? 'n/a' : formatPeriodDays(period), 'From astronomy-engine (VSOP87)');
+      addRow('Orbital period', period === null ? 'n/a' : formatPeriodDays(period), periodNote);
       addRow('Day length', formatHours(body.rotationPeriodH), 'Sidereal rotation period');
       addRow('Axial tilt', body.axialTiltDeg === null ? '—' : `${body.axialTiltDeg}°`);
-      addRow('Surface gravity', body.surfaceGravity === null ? '—' : `${body.surfaceGravity.toFixed(1)} m/s²`);
+      addRow('Surface gravity', body.surfaceGravity === null ? '—' : `${body.surfaceGravity.toFixed(body.surfaceGravity < 1 ? 2 : 1)} m/s²`);
       addRow('Mean temperature', body.meanTempK === null ? '—' : formatTemp(body.meanTempK), body.tempNote);
       sunDistanceValue = addRow('Distance from Sun', '');
       foot.textContent = `Source: ${body.source}`;
+      mapFoot.textContent = mapNote(body.maps.color !== undefined, body.mapCredit);
     },
     update(sunDistanceM) {
       if (sunDistanceValue) sunDistanceValue.textContent = sunDistanceM === null ? '—' : formatDistance(sunDistanceM);

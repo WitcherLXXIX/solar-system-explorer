@@ -4,9 +4,10 @@ import { SimClock } from './clock/clock';
 import { frameDelta } from './clock/frameDelta';
 import { BODY_IDS, getBody, type BodyId } from './catalog/bodies';
 import { computeFrame, type Frame } from './ephemeris/frame';
-import { SolarScene, type FrameInput } from './render/solarScene';
+import { labelPriority, moonLabelVisible } from './render/orbitFade';
+import { SolarScene, type FrameInput, type RenderInfo } from './render/solarScene';
 import { isWebGL2Available } from './render/webgl';
-import { length } from './math';
+import { length, sub } from './math';
 import { DEG } from './units';
 import { createBodyList } from './ui/bodyList';
 import { createInfoPanel } from './ui/infoPanel';
@@ -55,6 +56,14 @@ const labels = createLabels(element('labels'));
 const bodyList = createBodyList(element('bodies'), (id) => camera.flyTo(id));
 let shownBody: BodyId | null = null;
 const FOCUSED_LABEL_HIDE_PX = 24;
+
+/** A moon's label shows only while the camera is near its parent, measured in the moon's orbit radii (current distance from the parent). */
+function moonLabelAllowed(id: BodyId, info: Map<BodyId, RenderInfo>): boolean {
+  const body = getBody(id);
+  if (body.kind !== 'moon' || body.parent === null) return true;
+  const orbitRadiusM = length(sub(frame[id].position, frame[body.parent].position));
+  return moonLabelVisible(info.get(body.parent)!.distanceM, orbitRadiusM);
+}
 
 function resize(): void {
   scene.resize(window.innerWidth, window.innerHeight);
@@ -105,9 +114,12 @@ function loop(now: number): void {
       // its centre; the info panel and scale readout already name it, so drop that one label.
       const coversOwnLabel = b.id === displayed && b.screenDiameterPx > FOCUSED_LABEL_HIDE_PX;
       return {
-        id: b.id, name: getBody(b.id).name, x: b.x, y: b.y, priority: getBody(b.id).radiusM,
-        // Hide behind the camera, off-screen, occluded, or when the body itself already fills much of the view.
-        visible: b.inFront && !coversOwnLabel && !isLabelOccluded(b, onScreen) &&
+        id: b.id, name: getBody(b.id).name, x: b.x, y: b.y,
+        // Moons rank below every planet and dwarf planet in the declutter.
+        priority: labelPriority(getBody(b.id).kind, getBody(b.id).radiusM),
+        // Hide behind the camera, off-screen, occluded, when the body itself already fills much of the view,
+        // or (moons) when the camera is far from the parent.
+        visible: b.inFront && !coversOwnLabel && moonLabelAllowed(b.id, info) && !isLabelOccluded(b, onScreen) &&
           b.screenDiameterPx < scene.viewportHeight * 0.5 &&
           b.x > -50 && b.x < window.innerWidth + 50 && b.y > -20 && b.y < window.innerHeight + 20,
       };
@@ -132,6 +144,7 @@ declare global {
       setTime(iso: string): void;
       setEffects(on: boolean): void;
       hiResBodies(): string[];
+      labelsShown(): string[];
       textureCount(): number;
       hiTextureCount(): number;
       pixelStats(): { lit: number; warm: number; blue: number };
@@ -159,6 +172,7 @@ window.__solar = {
   },
   setEffects: (on) => scene.setEffectsEnabled(on),
   hiResBodies: () => scene.hiResBodies(),
+  labelsShown: () => labels.shown(),
   textureCount: () => scene.textureCount(),
   hiTextureCount: () => scene.hiTextureCount(),
   pixelStats: () => scene.pixelStats(),

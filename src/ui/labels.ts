@@ -13,8 +13,9 @@ export interface LabelItem {
 
 const MIN_SEPARATION_PX = 22;
 
-export function createLabels(root: HTMLElement): { update(items: LabelItem[], enabled: boolean): void } {
+export function createLabels(root: HTMLElement): { update(items: LabelItem[], enabled: boolean): void; shown(): BodyId[] } {
   const nodes = new Map<BodyId, HTMLElement>();
+  let lastShown: BodyId[] = [];
   for (const body of BODIES) {
     const node = el('div', 'label', body.name);
     node.style.display = 'none';
@@ -24,6 +25,7 @@ export function createLabels(root: HTMLElement): { update(items: LabelItem[], en
   return {
     update(items, enabled) {
       const shown = enabled ? layoutLabels(items.filter((i) => i.visible), MIN_SEPARATION_PX) : new Set<BodyId>();
+      lastShown = [...shown];
       for (const item of items) {
         const node = nodes.get(item.id)!;
         if (shown.has(item.id)) {
@@ -34,5 +36,6 @@ export function createLabels(root: HTMLElement): { update(items: LabelItem[], en
         }
       }
     },
+    shown: () => lastShown,
   };
 }
