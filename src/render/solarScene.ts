@@ -1,12 +1,14 @@
 import * as THREE from 'three';
 import { BODIES, type BodyId } from '../catalog/bodies';
 import type { Frame } from '../ephemeris/frame';
-import { length, type Vec3 } from '../math';
+import { length, sub, type Vec3 } from '../math';
 import { DEG } from '../units';
 import { BodyView, type RenderInfo } from './bodyView';
-import { nearPlane, orbitLineOpacity, toRenderSpace } from './cameraRelative';
+import { SPRITE_THRESHOLD_PX, nearPlane, orbitLineOpacity, toRenderSpace } from './cameraRelative';
 import { HI_RES_BUDGET, chooseHiRes, wantsHiTexture, type HiResCandidate } from './lod';
 import { OrbitLine } from './orbitLine';
+import { moonOrbitOpacity, spriteHiddenByParent } from './orbitFade';
+import { SPRITE_MIN_SIZE_PX } from './sprite';
 import { classifyPixel } from './pixelStats';
 import { TextureManager } from './textureManager';
 import { loadTexture } from './textures';
@@ -49,8 +51,8 @@ export class SolarScene {
       const view = new BodyView(body, this.textures);
       this.views.set(body.id, view);
       this.scene.add(...view.objects);
-      if (body.kind === 'planet') {
-        const orbit = new OrbitLine(body.id, body.color, startDate);
+      if (body.kind !== 'star') {
+        const orbit = new OrbitLine(body.id, body.color);
         this.orbits.set(body.id, orbit);
         this.scene.add(orbit.line);
       }
@@ -126,10 +128,29 @@ export class SolarScene {
         hiRes: this.granted.has(body.id), effectsEnabled: this.effectsEnabled, nearM: this.camera.near,
       });
       info.set(body.id, result);
+      const parent = body.parent === null ? null : info.get(body.parent) ?? null; // parents come first in BODIES
+      if (body.kind === 'moon' && parent && result.screenDiameterPx < SPRITE_THRESHOLD_PX) {
+        // A moon's dot on top of its parent's dot (or disc) is clutter: hide it until the two separate on screen.
+        const moonAt = this.projectToScreen(result.rel);
+        const parentAt = this.projectToScreen(parent.rel);
+        if (
+          moonAt.inFront && parentAt.inFront &&
+          spriteHiddenByParent(
+            { x: moonAt.x, y: moonAt.y, drawnPx: SPRITE_MIN_SIZE_PX },
+            { x: parentAt.x, y: parentAt.y, drawnPx: Math.max(parent.screenDiameterPx, SPRITE_MIN_SIZE_PX) },
+          )
+        ) view.hideSprite();
+      }
       const orbit = this.orbits.get(body.id);
       if (orbit) {
-        const opacity = input.showOrbits ? orbitLineOpacity(result.distanceM, length(entry.position)) : 0;
-        orbit.update(input.cameraPos, input.date, opacity);
+        const parentPos = body.parent === null ? entry.position : input.frame[body.parent].position;
+        const orbitRadiusM = length(sub(entry.position, parentPos)); // the current distance from the parent stands in for the orbit radius
+        const opacity = !input.showOrbits
+          ? 0
+          : body.kind === 'moon' && parent
+            ? moonOrbitOpacity(parent.distanceM, result.distanceM, orbitRadiusM)
+            : orbitLineOpacity(result.distanceM, orbitRadiusM);
+        orbit.update(parentPos, input.cameraPos, input.date, opacity);
       }
     }
     this.renderer.render(this.scene, this.camera);

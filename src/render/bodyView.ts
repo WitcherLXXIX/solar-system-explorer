@@ -145,6 +145,11 @@ export class BodyView {
     return this.hiRes;
   }
 
+  /** Hides the body's point sprite for this frame (call after `update`); the scene uses it when a moon's dot would sit on its parent's. */
+  hideSprite(): void {
+    this.sprite.visible = false;
+  }
+
   /** Distance and apparent size, cheap enough to run for every body before the frame's texture budget is decided. */
   measure(
     entry: FrameEntry, cameraPos: Vec3, fovYRad: number, viewportHeightPx: number,

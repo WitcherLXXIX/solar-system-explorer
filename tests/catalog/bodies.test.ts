@@ -51,7 +51,7 @@ describe('phase 2a catalog data', () => {
     expect(earth.oceanGlint).toBeDefined();
   });
   it('attaches atmospheres to Earth, Venus, Mars and the four giants only', () => {
-    expect(ids((b) => b.atmosphere)).toEqual(['venus', 'earth', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune']);
+    expect(ids((b) => b.atmosphere)).toEqual(['venus', 'earth', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'titan', 'pluto']);
     for (const b of BODIES) {
       if (!b.atmosphere) continue;
       const a = b.atmosphere;

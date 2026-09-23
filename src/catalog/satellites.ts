@@ -103,6 +103,11 @@ export const SATELLITE_BODIES: readonly BodyData[] = [
     radiusM: 2_574_760, massKg: 1.345e23, orbitPeriodDays: 15.945421, rotationPeriodH: 382.690,
     axialTiltDeg: null, surfaceGravity: 1.35, meanTempK: null,
     maps: {}, color: '#d99a3a', source: `${JPL}; ${NSSDC}`,
+    // Titan: a thick orange organic haze reaching several hundred km (0.2 of its radius).
+    atmosphere: {
+      heightFraction: 0.2, scaleHeightFraction: 0.05, mieScaleHeightFraction: 0.07,
+      rayleigh: [0.6, 0.5, 0.3], mie: 6, mieG: 0.6, intensity: 8, tint: [1.0, 0.62, 0.22],
+    },
   },
   {
     id: 'iapetus', name: 'Iapetus', kind: 'moon', parent: 'saturn', orbitSource: 'elements',
@@ -156,6 +161,11 @@ export const SATELLITE_BODIES: readonly BodyData[] = [
     radiusM: 1_188_000, massKg: 1.302e22, orbitPeriodDays: 90_560, rotationPeriodH: -153.2928,
     axialTiltDeg: null, surfaceGravity: 0.616, meanTempK: 37.5, tempNote: 'black-body temperature',
     maps: {}, color: '#c9a98a', source: `${JPL} (Pluto/Charon GM table); ${NSSDC_PLUTO}`,
+    // Pluto: thin blue haze layers reaching about 0.17 of its radius.
+    atmosphere: {
+      heightFraction: 0.17, scaleHeightFraction: 0.03, mieScaleHeightFraction: 0.03,
+      rayleigh: [1.2, 2.2, 5], mie: 3, mieG: 0.7, intensity: 5, tint: [0.55, 0.75, 1.0],
+    },
   },
   {
     id: 'charon', name: 'Charon', kind: 'moon', parent: 'pluto', orbitSource: 'elements',
