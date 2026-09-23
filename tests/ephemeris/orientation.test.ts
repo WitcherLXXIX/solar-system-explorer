@@ -56,7 +56,7 @@ describe('dwarf planet orientation', () => {
       expect(dot(x, y), id).toBeCloseTo(0, 9);
       expect(dot(cross(x, y), z), id).toBeCloseTo(1, 9);
       // A tenth of a rotation later the prime meridian has turned by 36 degrees (a pole fixed within the interval).
-      const tenth = (Math.abs(getBody(id).rotationPeriodH) / 10) * 3600 * 1000;
+      const tenth = (Math.abs(getBody(id).rotationPeriodH!) / 10) * 3600 * 1000;
       const later = bodyOrientation(id, new Date(date.getTime() + tenth))[0];
       expect(angle(x, later), id).toBeGreaterThan(20);
       expect(angle(x, later), id).toBeLessThan(50);

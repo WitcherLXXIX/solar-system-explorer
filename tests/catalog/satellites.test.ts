@@ -83,7 +83,7 @@ describe('satellite facts', () => {
   });
   it('rotates once per orbit for every moon (tidal locking), and Triton, which orbits backwards, is negative', () => {
     for (const b of SATELLITE_BODIES.filter((s) => s.kind === 'moon')) {
-      expect(relDiff(Math.abs(b.rotationPeriodH), b.orbitPeriodDays! * 24), b.id).toBeLessThan(0.005);
+      expect(relDiff(Math.abs(b.rotationPeriodH!), b.orbitPeriodDays! * 24), b.id).toBeLessThan(0.005);
     }
     expect(body('triton').rotationPeriodH).toBeLessThan(0);
   });

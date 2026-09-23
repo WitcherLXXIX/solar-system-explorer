@@ -1,4 +1,6 @@
-export type TreeKind = 'star' | 'planet' | 'moon' | 'dwarf';
+import { isSmallBodyKind, type BodyKind } from '../catalog/bodies';
+
+export type TreeKind = BodyKind;
 
 export interface TreeInput<Id extends string> {
   id: Id;
@@ -51,4 +53,9 @@ export function visibleRows<Id extends string>(tree: readonly TreeNode<Id>[], ex
   };
   walk(tree, 0);
   return rows;
+}
+
+/** Splits off the named small bodies (asteroids, trans-Neptunian objects, comets), which the body list shows in their own group. Order is kept. */
+export function splitSmallBodies<T extends { kind: TreeKind }>(bodies: readonly T[]): { main: T[]; small: T[] } {
+  return { main: bodies.filter((b) => !isSmallBodyKind(b.kind)), small: bodies.filter((b) => isSmallBodyKind(b.kind)) };
 }

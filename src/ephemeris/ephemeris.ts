@@ -97,6 +97,8 @@ export function bodyOrientation(id: BodyId, date: Date): Mat3 {
     const at = (dtS: number): Vec3 => bodyRelativePosition(id, new Date(date.getTime() + dtS * 1000));
     return lockedOrientation(at(0), relativeVelocity(at));
   }
+  // An unknown spin (comets, some trans-Neptunian objects) keeps the ecliptic axes fixed rather than inventing a period.
+  if (data.rotationPeriodH === null) return [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
   return assumedOrientation(data.rotationPeriodH, time.tt);
 }
 

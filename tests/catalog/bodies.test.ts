@@ -15,7 +15,7 @@ describe('catalog', () => {
       expect(b.massKg ?? 1, b.id).toBeGreaterThan(0);
       expect(b.surfaceGravity ?? 1, b.id).toBeGreaterThan(0);
       expect(b.meanTempK ?? 1, b.id).toBeGreaterThan(0);
-      expect(Number.isFinite(b.rotationPeriodH), b.id).toBe(true);
+      expect(Number.isFinite(b.rotationPeriodH ?? 1), b.id).toBe(true);
       expect(b.rotationPeriodH, b.id).not.toBe(0);
       expect(b.maps.color?.lo.length ?? 1, b.id).toBeGreaterThan(0);
       expect(b.source.length, b.id).toBeGreaterThan(0);

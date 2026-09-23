@@ -1,9 +1,9 @@
 import { getBody, type BodyId } from '../catalog/bodies';
 import { orbitalPeriodDays } from '../ephemeris/ephemeris';
 import {
-  formatDistance, formatHours, formatMass, formatPeriodDays, formatRadius, formatTemp,
+  formatDistance, formatMass, formatPeriodDays, formatRadius, formatTemp,
 } from '../format/format';
-import { formatGravity, kindLabel, mapNote } from './bodyText';
+import { dayLengthText, formatGravity, kindLabel, mapNote } from './bodyText';
 import { el } from './dom';
 
 export function createInfoPanel(root: HTMLElement): { setBody(id: BodyId): void; update(sunDistanceM: number | null): void } {
@@ -38,7 +38,7 @@ export function createInfoPanel(root: HTMLElement): { setBody(id: BodyId): void;
       addRow('Radius', formatRadius(body.radiusM), 'Volumetric mean radius');
       addRow('Mass', body.massKg === null ? '—' : formatMass(body.massKg));
       addRow('Orbital period', period === null ? 'n/a' : formatPeriodDays(period), periodNote);
-      addRow('Day length', formatHours(body.rotationPeriodH), 'Sidereal rotation period');
+      addRow('Day length', dayLengthText(body.rotationPeriodH), 'Sidereal rotation period');
       addRow('Axial tilt', body.axialTiltDeg === null ? '—' : `${body.axialTiltDeg}°`);
       addRow('Surface gravity', body.surfaceGravity === null ? '—' : formatGravity(body.surfaceGravity));
       addRow('Mean temperature', body.meanTempK === null ? '—' : formatTemp(body.meanTempK), body.tempNote);

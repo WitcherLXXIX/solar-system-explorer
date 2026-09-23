@@ -96,7 +96,7 @@ describe('bundled IAU rotation constants', () => {
       const b = body(id as BodyId);
       const periodDays = 360 / Math.abs(r.wRateDegPerDay);
       if (b.kind === 'moon') expect(relDiff(periodDays, b.orbitPeriodDays!), id).toBeLessThan(0.005);
-      else expect(relDiff(periodDays * 24, Math.abs(b.rotationPeriodH)), id).toBeLessThan(0.01);
+      else expect(relDiff(periodDays * 24, Math.abs(b.rotationPeriodH!)), id).toBeLessThan(0.01);
     }
   });
 });

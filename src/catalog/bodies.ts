@@ -5,9 +5,17 @@ export type BodyId =
   | 'moon' | 'phobos' | 'deimos' | 'io' | 'europa' | 'ganymede' | 'callisto'
   | 'mimas' | 'enceladus' | 'tethys' | 'dione' | 'rhea' | 'titan' | 'iapetus'
   | 'miranda' | 'ariel' | 'umbriel' | 'titania' | 'oberon' | 'triton' | 'pluto' | 'charon'
-  | 'ceres' | 'eris' | 'haumea' | 'makemake';
+  | 'ceres' | 'eris' | 'haumea' | 'makemake'
+  | 'vesta' | 'pallas' | 'hygiea' | 'juno' | 'quaoar' | 'orcus' | 'sedna' | 'gonggong'
+  | 'halley' | 'halebopp' | 'c67p' | 'swifttuttle';
 
-export type BodyKind = 'star' | 'planet' | 'moon' | 'dwarf';
+export type BodyKind = 'star' | 'planet' | 'moon' | 'dwarf' | 'asteroid' | 'tno' | 'comet';
+
+/** The kinds phase 3 adds: named asteroids, trans-Neptunian objects and comets. */
+export const SMALL_BODY_KINDS: readonly BodyKind[] = ['asteroid', 'tno', 'comet'];
+export function isSmallBodyKind(kind: BodyKind): boolean {
+  return SMALL_BODY_KINDS.includes(kind);
+}
 /** Where a body's position comes from: astronomy-engine, or the bundled mean elements in `orbits.ts`. */
 export type OrbitSource = 'astronomy-engine' | 'elements';
 
@@ -74,8 +82,8 @@ export interface BodyData {
   radiusM: number;
   /** Null when no mass/GM figure exists on any allowed source domain (e.g. Eris, Haumea, Makemake). */
   massKg: number | null;
-  /** Sidereal rotation period in hours; negative means retrograde. Info panel only. */
-  rotationPeriodH: number;
+  /** Sidereal rotation period in hours; negative means retrograde; null when no verified period exists (drawn with fixed axes). Info panel only. */
+  rotationPeriodH: number | null;
   /** Obliquity to orbit in degrees (Sun: to the ecliptic). Info panel only. */
   axialTiltDeg: number | null;
   /** Null when massKg is null, since it is derived from mass. */
