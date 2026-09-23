@@ -5,7 +5,8 @@ import { allTextureFiles, textureFileName } from '../../src/catalog/textureFiles
 
 describe('catalog', () => {
   it('lists the Sun and eight planets in order', () => {
-    expect(BODY_IDS).toEqual(['sun', 'mercury', 'venus', 'earth', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune']);
+    expect(BODY_IDS.slice(0, 9)).toEqual(['sun', 'mercury', 'venus', 'earth', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune']);
+    expect(BODY_IDS).toHaveLength(35);
   });
   it('has unique ids and finite, positive physical values', () => {
     expect(new Set(BODIES.map((b) => b.id)).size).toBe(BODIES.length);

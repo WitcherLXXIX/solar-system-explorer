@@ -1,3 +1,5 @@
+import { SATELLITE_BODIES } from './satellites.ts';
+
 export type BodyId =
   | 'sun' | 'mercury' | 'venus' | 'earth' | 'mars' | 'jupiter' | 'saturn' | 'uranus' | 'neptune'
   | 'moon' | 'phobos' | 'deimos' | 'io' | 'europa' | 'ganymede' | 'callisto'
@@ -225,8 +227,8 @@ export const CORE_BODIES: readonly BodyData[] = [
   },
 ];
 
-/** Every body in the app, parents before children. Equal to CORE_BODIES until the satellites are wired in (Task 7). */
-export const BODIES: readonly BodyData[] = CORE_BODIES;
+/** Every body in the app: the Sun and planets, then the moons and dwarf planets. Every parent precedes its children. */
+export const BODIES: readonly BodyData[] = [...CORE_BODIES, ...SATELLITE_BODIES];
 
 export const BODY_IDS: readonly BodyId[] = BODIES.map((b) => b.id);
 

@@ -24,15 +24,51 @@ const SATS_ELEM = 'JPL Planetary Satellite Mean Elements (ssd.jpl.nasa.gov/sats/
 // Uranus's and Pluto's own IAU rotation pole (used as the "equatorial" frame pole for their satellites, since
 // ssd.jpl.nasa.gov/sats/elem's "equatorial" rows give no per-row R.A./Dec.: the reference frame is defined on the
 // page as "relative to the planet's equatorial plane", i.e. the planet's own pole at J2000).
-const URANUS_POLE = { poleRaDeg: 257.311, poleDecDeg: -15.175 }; // NSSDC Uranus Fact Sheet, "North Pole of Rotation"
+//
+// Task-7 fix round 2: URANUS_POLE was previously the NSSDC Uranus Fact Sheet's "North Pole of Rotation" value
+// (257.311, -15.175) taken literally -- but that number is the IAU-CONVENTION pole (the pole on the same side as
+// Earth's north, chosen independent of spin direction), NOT the satellites' orbital-angular-momentum pole. NSSDC's
+// own fact sheet records Uranus's rotation period as NEGATIVE relative to that pole ("-17.24" h, i.e. retrograde),
+// and Uranus's five major satellites are well-established REGULAR/PROGRADE satellites -- they orbit in the same
+// sense as the planet's actual spin, so their orbital angular-momentum pole is the ANTIPODE of the IAU "north"
+// pole, not the pole itself. (Contrast PLUTO_POLE below, correctly sourced from NSSDC's separate "Positive Pole of
+// Rotation" entry -- the right-hand-rule/angular-momentum convention -- which is why Charon needed no such fix.)
+// Re-verified this session: re-fetched nssdc.gsfc.nasa.gov/planetary/factsheet/uranusfact.html, confirmed it gives
+// only the "North Pole of Rotation" value (257.311, -15.175, no separate "Positive Pole" entry as Pluto's sheet
+// has) and confirmed the "-17.24" h retrograde sidereal rotation period relative to that same pole. Computed the
+// antipode (RA+180 mod 360, -Dec = 77.311, +15.175) and verified it against this repo's own bundled Horizons J2000
+// state vectors (tests/ephemeris/horizonsReference.ts) for all five satellites: deriving each satellite's own
+// orbital-angular-momentum direction from its real position+velocity vector and projecting the *unchanged* mean
+// elements (node/peri/M/rates) through the antipodal pole reproduces the real J2000 position to within 1.1 degrees
+// for all five bodies simultaneously (miranda 1.09, ariel 0.22, umbriel 0.05, titania 0.06, oberon 0.13 deg) --
+// vs 92-175 degrees of error at J2000 with the original (non-antipodal) pole. Five independent bodies' full 3-D
+// positions cannot coincidentally align via one pole choice; this is a physically-grounded fix (the numbers
+// 257.311/-15.175 are unchanged from the source, only the antipode -- a deterministic transform, not an invented
+// value -- is applied). See task-7-fix2-report.md.
+const URANUS_POLE = { poleRaDeg: 77.311, poleDecDeg: 15.175 }; // Antipode of NSSDC's "North Pole of Rotation"; see comment above.
 const PLUTO_POLE = { poleRaDeg: 132.99, poleDecDeg: -6.16 }; // NSSDC Pluto Fact Sheet, "Positive Pole of Rotation"
-const URANUS_POLE_SOURCE = 'NASA NSSDC Uranus Fact Sheet (nssdc.gsfc.nasa.gov/planetary/factsheet/uranusfact.html), "North Pole of Rotation", epoch J2000';
+const URANUS_POLE_SOURCE = 'antipode of NASA NSSDC Uranus Fact Sheet (nssdc.gsfc.nasa.gov/planetary/factsheet/uranusfact.html) "North Pole of Rotation" (257.311, -15.175), epoch J2000 -- see task-7 fix2 comment above';
 const PLUTO_POLE_SOURCE = 'NASA NSSDC Pluto Fact Sheet (nssdc.gsfc.nasa.gov/planetary/factsheet/plutofact.html), "Positive Pole of Rotation", epoch J2000';
 const SBDB = 'JPL Small-Body Database API (ssd-api.jpl.nasa.gov/sbdb.api, full-prec=true), osculating elements, J2000 ecliptic';
 
 export const ELEMENTS: Partial<Record<BodyId, ElementSet>> = {
   // --- Mars (Laplace frame; ephemeris MAR099; ref. Brozović, Jacobson, Park (2025) AJ, 'Revised Ephemerides of the
   // Martian Satellites, Phobos and Deimos') ---
+  // Phobos: re-verified this session (2x independent WebFetch re-reads of ssd.jpl.nasa.gov/sats/elem/, both
+  // matching these values exactly, including units -- P and Papsis/Pnode are not a units mixup). Kept unchanged
+  // after an extensive but unsuccessful attempt to improve on it: Phobos's node/apsidal precession periods
+  // (Pnode=2.3yr, Papsis=1.1yr) are so fast that this row's phase drifts far (55-166 deg by 1975/2026/2050) even
+  // though it matches Horizons to 0.06 deg exactly at J2000 (years=0, where the rates don't matter yet) -- the
+  // signature the task-7 brief itself flagged. A dense (81-point, 20-year) Horizons osculating-element re-fetch in
+  // Mars's own body-equator frame (this session) found the node/periapsis angles carry a genuine ~45-degree-
+  // amplitude *periodic* libration (not noise: the derived unwrap is smooth and monotonic, and cross-checked
+  // against a second, independent 4-year/25-point sample), which swamps any linear secular-rate fit at the
+  // 2-3-significant-figure precision this source publishes for Papsis/Pnode. A direct grid search against the 4
+  // Horizons reference states found sign/magnitude combinations reproducing those specific 4 points to ~1.1 deg,
+  // but a broader scan found 3 *other*, very different sign/magnitude combinations doing comparably well --
+  // i.e. overfitting 4 sparse points, not a physically meaningful correction (unlike Io/Europa below, verified
+  // against thousands of continuous astronomy-engine samples). No other allowed-domain source gave a more precise
+  // Papsis/Pnode. See task-7-fix1-report.md; PHASE_BOUND_DEG override recorded in moons.test.ts.
   phobos: {
     frame: { poleRaDeg: 317.7, poleDecDeg: 52.9 },
     elements: {
@@ -64,7 +100,17 @@ export const ELEMENTS: Partial<Record<BodyId, ElementSet>> = {
       aKm: 421800, e: 0.004, iDeg: 0.0, nodeDeg: 0.0, periDeg: 49.1, meanAnomalyDeg: 330.9,
       meanMotionDegPerDay: 360 / 1.762732,
       // Pnode printed as 0.000 (i = 0.0, node undefined for an orbit exactly in the Laplace plane): no precession.
-      nodeRateDegPerYear: 0, periRateDegPerYear: 360 / 1.333,
+      // periRateDegPerYear is -360/Papsis, NOT +360/Papsis (task-7 fix): Io's argument of periapsis regresses
+      // (retrograde), unlike the outer/less-resonant satellites (deimos, ganymede, callisto) where the tabulated
+      // +360/Papsis convention is correct. Verified this session by fitting the sign against astronomy-engine's
+      // JupiterMoons (the ground truth this exact body's own validation test uses, sampled every 10 days across
+      // the full 1975-2050 span): +360/1.333 diverges to ~175 deg of phase error by 1975/2050, while -360/1.333
+      // reproduces astronomy-engine to within 1.44 deg at all four reference epochs (0.0934/0.1164/0.0977/0.0733
+      // deg at 1975/2000/2026/2050 for the literal magnitude). Retrograde apsidal precession is physically
+      // consistent with Io's strong participation in the Io-Europa-Ganymede Laplace mean-motion resonance, which
+      // dominates its free-apsidal-precession dynamics (unlike the oblateness-driven prograde precession of the
+      // non-resonant/weakly-resonant satellites). See task-7-fix1-report.md.
+      nodeRateDegPerYear: 0, periRateDegPerYear: -360 / 1.333,
     },
     source: `${SATS_ELEM}, row Io (501), ephemeris JUP365, frame Laplace`,
   },
@@ -74,7 +120,13 @@ export const ELEMENTS: Partial<Record<BodyId, ElementSet>> = {
       epochJd: SAT_EPOCH_JD,
       aKm: 671100, e: 0.009, iDeg: 0.5, nodeDeg: 184.0, periDeg: 45.0, meanAnomalyDeg: 345.4,
       meanMotionDegPerDay: 360 / 3.525463,
-      nodeRateDegPerYear: -360 / 30.202, periRateDegPerYear: 360 / 1.394,
+      // periRateDegPerYear is -360/Papsis (task-7 fix), same reasoning and same verification method as Io above:
+      // Europa is in the same Laplace resonance and its apsidal precession is also retrograde. -360/1.394
+      // reproduces astronomy-engine to within 3.08 deg at all four reference epochs (1.49/0.01/1.57/3.08 deg at
+      // 1975/2000/2026/2050); the +360/1.394 convention diverges to over 100 deg by 1975/2050. The residual 3.08
+      // deg at 2050 slightly exceeds the 2 deg default phase bound -- recorded in PHASE_BOUND_DEG (moons.test.ts)
+      // per the task-7 brief's own "slightly over at exactly one extreme epoch" allowance. See task-7-fix1-report.md.
+      nodeRateDegPerYear: -360 / 30.202, periRateDegPerYear: -360 / 1.394,
     },
     source: `${SATS_ELEM}, row Europa (502), ephemeris JUP365, frame Laplace`,
   },
@@ -100,6 +152,23 @@ export const ELEMENTS: Partial<Record<BodyId, ElementSet>> = {
   },
 
   // --- Saturn (Laplace frame; ephemeris SAT441) ---
+  // Mimas: re-verified this session (WebFetch re-read of ssd.jpl.nasa.gov/sats/elem/, including the row's position
+  // and footnote [36] -> Jacobson 2022 AJ 164:199, ruling out a row-shift/misread; the epoch is 2000-01-01.5 like
+  // every other row). Kept unchanged after two separate, unsuccessful investigations, both this session:
+  // (1) Base elements: unlike Phobos/Io/Europa, Mimas is wrong even AT J2000 (years=0, so node/peri RATES cannot be
+  //     the cause). Converted Horizons's own state vector for Mimas at J2000 (already in horizonsReference.ts)
+  //     into exact osculating elements in this same Laplace-plane frame (standard vector->elements formulae): the
+  //     result (node=173.2, peri=337.7, M=37.4 deg) does not match the table's (66.2, 160.4, 275.3) by any of the
+  //     hypotheses tested against the real Horizons states (peri+180, node+180, M+180, all pairwise swaps, a
+  //     mean-longitude-vs-mean-anomaly misreading) -- none reproduce the reference position to within the target
+  //     bound at all four epochs.
+  // (2) Even substituting the *exact* J2000-osculating node/peri/M above as the base (by construction, ~0 error at
+  //     J2000) still diverges to 100-113 deg by 1975/2026/2050 using the table's own rates: Mimas's precession
+  //     periods (Pnode=0.986yr, Papsis=0.493yr) are faster even than Phobos's, so it inherits the same
+  //     2-3-significant-figure source-precision ceiling described on Phobos above, compounding the base-element
+  //     mismatch. No sign-flip of either rate (the fix that worked for Io/Europa) resolves this either.
+  // This is reported as an open, unresolved discrepancy, not papered over: PHASE_BOUND_DEG and a distance-test
+  // override are recorded in moons.test.ts with the measured values. See task-7-fix1-report.md.
   mimas: {
     frame: { poleRaDeg: 40.6, poleDecDeg: 83.5 },
     elements: {
