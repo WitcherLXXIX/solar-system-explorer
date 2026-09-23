@@ -26,7 +26,7 @@ export const SATELLITE_BODIES: readonly BodyData[] = [
     id: 'moon', name: 'Moon', kind: 'moon', parent: 'earth', orbitSource: 'astronomy-engine',
     radiusM: 1_737_400, massKg: 7.346e22, orbitPeriodDays: 27.3217, rotationPeriodH: 655.721,
     axialTiltDeg: null, surfaceGravity: 1.62, meanTempK: 270.4, tempNote: 'black-body temperature',
-    maps: {}, color: '#b5b1a8', source: `${JPL}; ${NSSDC}`,
+    maps: { color: { lo: '2k_moon', hi: '8k_moon' } }, color: '#b5b1a8', source: `${JPL}; ${NSSDC}`,
   },
   {
     id: 'phobos', name: 'Phobos', kind: 'moon', parent: 'mars', orbitSource: 'elements',
@@ -177,7 +177,9 @@ export const SATELLITE_BODIES: readonly BodyData[] = [
     id: 'ceres', name: 'Ceres', kind: 'dwarf', parent: 'sun', orbitSource: 'elements',
     radiusM: 469_700, massKg: 9.384e20, orbitPeriodDays: 1679.853, rotationPeriodH: 9.074,
     axialTiltDeg: null, surfaceGravity: 0.284, meanTempK: null,
-    maps: {}, color: '#8c8a86', source: `${SBDB}, sstr=Ceres; ${SCI_NASA}/ceres/facts/`,
+    maps: { color: { lo: '2k_ceres' } },
+    mapCredit: 'NASA/JPL-Caltech/UCLA/MPS/DLR/IDA (Dawn Framing Camera global mosaic, 400 m/pixel)',
+    color: '#8c8a86', source: `${SBDB}, sstr=Ceres; ${SCI_NASA}/ceres/facts/`,
   },
   {
     // BLOCKED: no mass figure found on any of the four allowed domains (SBDB phys_par and Horizons OBJ_DATA both

@@ -39,7 +39,7 @@ describe('phase 2a catalog data', () => {
   const ids = (pick: (b: (typeof BODIES)[number]) => unknown): BodyId[] => BODIES.filter((b) => pick(b)).map((b) => b.id);
 
   it('has 8K maps exactly where the source provides them', () => {
-    expect(ids((b) => b.maps.color?.hi)).toEqual(['sun', 'mercury', 'earth', 'mars', 'jupiter', 'saturn']);
+    expect(ids((b) => b.maps.color?.hi)).toEqual(['sun', 'mercury', 'earth', 'mars', 'jupiter', 'saturn', 'moon']);
   });
   it('uses the 4K cloud-top map as the Venus base map', () => {
     expect(getBody('venus').maps.color?.lo).toBe('4k_venus_atmosphere');
