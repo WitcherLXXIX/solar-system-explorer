@@ -19,6 +19,23 @@ export function solveKepler(meanAnomaly: number, e: number): number {
   return big;
 }
 
+/**
+ * `count` time offsets in days, from now, that step the ECCENTRIC anomaly evenly through one whole orbit starting at the
+ * body's current position (the first offset is 0). Sampling an orbit evenly in time crowds the samples at the far end of a
+ * very eccentric orbit and leaves long straight chords at perihelion; even steps in eccentric anomaly are dense where the
+ * orbit curves. `meanAnomalyRad` is the mean anomaly now and `meanMotionRadPerDay` the mean anomaly rate.
+ */
+export function eccentricSampleDays(meanAnomalyRad: number, e: number, meanMotionRadPerDay: number, count: number): Float64Array {
+  const e0 = solveKepler(meanAnomalyRad, e);
+  const m0 = e0 - e * Math.sin(e0);
+  const out = new Float64Array(count);
+  for (let k = 0; k < count; k++) {
+    const big = e0 + (TWO_PI * k) / count;
+    out[k] = (big - e * Math.sin(big) - m0) / meanMotionRadPerDay;
+  }
+  return out;
+}
+
 /** A mean-element orbit: angles in degrees, epoch as a Julian date in TDB, precession rates in degrees per Julian year (signed). */
 export interface OrbitalElements {
   epochJd: number;
