@@ -7,7 +7,7 @@ import type { BodyId } from '../../src/catalog/bodies';
  * value on an allowed domain; list the rest in NO_SECOND_SOURCE (at most five).
  *
  * Two bodies (deimos, oberon) omit `massKg` here on purpose: the second source's mass genuinely disagrees with the
- * primary catalog's JPL-GM-derived mass by more than the test's 5% tolerance (~40% for Deimos, ~6.8% for Oberon).
+ * primary catalog's JPL-GM-derived mass by more than the test's 5% tolerance (~67% for Deimos, ~6.8% for Oberon).
  * Both values were re-fetched verbatim from their source pages and are not transcription errors -- see
  * .superpowers/sdd/2026-09-21-moons-dwarfs/task-4-report.md for the numbers and sources on both sides.
  */

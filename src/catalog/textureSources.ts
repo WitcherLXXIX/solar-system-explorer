@@ -22,6 +22,7 @@ export function isAllowedHost(url: string): boolean {
 
 /** File name (with .jpg) to source. Files that are not listed here come from Solar System Scope (CC BY 4.0). */
 export const TEXTURE_SOURCES: Readonly<Record<string, TextureSource>> = {
+  // Named 2k_ceres for the slot it fills, but the file (ceres_dawn_fc_dlr_global_1024.jpg) is only 1024x512.
   '2k_ceres.jpg': {
     url: 'https://astrogeology.usgs.gov/ckan/dataset/39338f6b-5fef-4ac4-9310-ce5b1cdd0f69/resource/8b1e5592-c2b0-4ed7-8cd2-5a3590d88bf7/download/ceres_dawn_fc_dlr_global_1024.jpg',
     credit: 'NASA/JPL-Caltech/UCLA/MPS/DLR/IDA (Dawn Framing Camera global mosaic, 400 m/pixel)',

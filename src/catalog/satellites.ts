@@ -35,9 +35,9 @@ export const SATELLITE_BODIES: readonly BodyData[] = [
     maps: {}, color: '#7d7368', source: `${JPL}; ${NSSDC} (Mars fact sheet satellites table)`,
   },
   {
-    // Second source (NSSDC) gives mass 2.4e15 kg, ~40% above the JPL-GM-derived 1.44e15 kg -- re-fetched both rows
+    // Second source (NSSDC) gives mass 2.4e15 kg, ~67% above the JPL-GM-derived 1.441e15 kg -- re-fetched both rows
     // verbatim and confirmed neither is a transcription error; this is a genuine disagreement between an older
-    // NSSDC figure and the more recent MAR097-fit JPL GM. massKg is intentionally left out of crossCheck.ts's
+    // NSSDC figure and the more recent MAR099-fit JPL GM. massKg is intentionally left out of crossCheck.ts's
     // SECOND_SOURCE for deimos (radius and period, which agree, are kept). See task-4-report.md.
     id: 'deimos', name: 'Deimos', kind: 'moon', parent: 'mars', orbitSource: 'elements',
     radiusM: 6_200, massKg: 1.441e15, orbitPeriodDays: 1.26244, rotationPeriodH: 30.299,
@@ -177,7 +177,7 @@ export const SATELLITE_BODIES: readonly BodyData[] = [
     id: 'ceres', name: 'Ceres', kind: 'dwarf', parent: 'sun', orbitSource: 'elements',
     radiusM: 469_700, massKg: 9.384e20, orbitPeriodDays: 1679.853, rotationPeriodH: 9.074,
     axialTiltDeg: null, surfaceGravity: 0.284, meanTempK: null,
-    maps: { color: { lo: '2k_ceres' } },
+    maps: { color: { lo: '2k_ceres' } }, // NB: the file is named 2k_ceres but is 1024x512 (the USGS 1024 px mosaic); the map is tiny, not 2K.
     mapCredit: 'NASA/JPL-Caltech/UCLA/MPS/DLR/IDA (Dawn Framing Camera global mosaic, 400 m/pixel)',
     color: '#8c8a86', source: `${SBDB}, sstr=Ceres; ${SCI_NASA}/ceres/facts/`,
   },

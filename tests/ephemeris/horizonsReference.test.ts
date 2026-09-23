@@ -43,6 +43,8 @@ describe('Horizons reference states', () => {
     for (const s of HORIZONS_STATES) {
       const b = body(s.id);
       const parent = body(b.parent!);
+      // massKg is null for Eris, Haumea and Makemake; `null + x` is `x` in JavaScript (not NaN), so mu falls back to the
+      // Sun's mass alone, which is physically fine for a body this light.
       const mu = G * (parent.massKg! + b.massKg!);
       const r = norm(s.positionKm) * 1000;
       const v = norm(s.velocityKmS) * 1000;

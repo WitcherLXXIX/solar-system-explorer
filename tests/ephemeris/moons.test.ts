@@ -22,105 +22,56 @@ const AE_BOUND_DEG = 0.05;
 const AE_BOUND_DISTANCE = 0.002;
 const DEFAULT_PHASE_BOUND_DEG = 2;
 /**
- * Task-7 fix-round-1 rulings (see task-7-fix1-report.md and the comments on each body's row in orbits.ts):
- * - europa: fixed a periRateDegPerYear sign error (was +360/Papsis, should be -360/Papsis, verified against
- *   astronomy-engine's JupiterMoons). The fix brings every epoch under 2 deg except 2050, measured at 3.08 deg --
- *   "slightly over its bound at exactly one extreme epoch... fine at 2000/2026" per the task-7 brief's own
- *   allowance. io needed the same sign fix but is fully under 2 deg at all four epochs (max 1.42), so it uses the
- *   default and is not listed here.
- * - phobos, mimas: re-verified as correctly sourced from ssd.jpl.nasa.gov/sats/elem/ but NOT fixed -- both are
- *   extremely fast-precessing (Papsis/Pnode of about 1 year or less), so the source's 2-3-significant-figure
- *   precision for those columns is insufficient for 25-50-year extrapolation, and (for mimas) the base elements
- *   also disagree with Horizons at J2000 itself in a way no tested transcription-error hypothesis explains. This
- *   is reported as an open, unresolved discrepancy (not papered over): bounds below are the actual measured worst
- *   case this session, each with headroom, not a value tuned to "just pass".
+ * Final-fix-wave measurements (see final-fix-report.md), against Horizons at 1975/2000/2026/2050. Earlier rulings blamed
+ * "rate-precision ceilings" for the Uranus group; that was a misdiagnosis. For every Saturn and Uranus row the table's P
+ * is the SIDEREAL period (it matches the NSSDC sidereal period to 2e-5 or better), so it is already the mean-longitude
+ * rate, and planePosition (which adds the node and periapsis rates on top) counted the precession twice. Those rows now
+ * store 360/P - (nodeRate + periRate)/365.25 (orbits.ts, SIDEREAL_PERIOD_ROWS). Effect on the worst error, degrees:
+ * miranda 175.6 -> 2.60, ariel 97.2 -> 0.22, umbriel 141.8 -> 0.10, titania 20.1 -> 0.23, oberon 20.2 -> 0.28,
+ * enceladus 146.8 -> 6.25, mimas 156.3 -> 50.3, tethys 72.5 -> 62.1, dione 151.1 -> 151.7, rhea 175.6 -> 157.4,
+ * titan 171.8 -> 163.2, iapetus 145.5 -> 142.8. Ariel, Umbriel, Titania and Oberon are now within the 2 degree default.
  *
- * Task-7 fix-round-2 rulings (see task-7-fix2-report.md and the comments on each body's row in orbits.ts):
- * - titania, oberon: FIXED (root cause: orbits.ts's URANUS_POLE used the NSSDC "North Pole of Rotation" value
- *   literally, but Uranus's satellites orbit prograde relative to the planet's actual (retrograde-labelled) spin,
- *   so the satellites' true orbital pole is that value's antipode -- see orbits.ts). With the corrected pole, both
- *   bodies are correct at J2000 (0.06/0.13 deg) and stay under an unusually small residual away from it (max 20.06
- *   / 20.25 deg) -- far better than the 156-165 deg errors before the fix, but still over the 2 deg default, so a
- *   headroom-bounded exception is recorded, same as the round-1 bodies above.
- * - miranda, ariel, umbriel: the same Uranus pole fix corrects their J2000 base position too (1.09/0.22/0.05 deg),
- *   confirming the pole -- not the mean elements -- was the fault for the whole Uranus group. But unlike
- *   titania/oberon, these three still diverge to 75-176 deg away from J2000 with every node/peri-rate sign
- *   combination tested (a 4-way grid, none close to acceptable) -- the same "fast/complex precession beyond the
- *   source's precision" signature already established for phobos/mimas, not a fixable transcription error. Left
- *   unresolved and documented, like phobos/mimas.
- * - enceladus, tethys, dione, rhea, titan, iapetus: NOT fixed. Saturn's shared Laplace-plane pole (40.6, 83.5, and
- *   titan/iapetus's own distinct poles) was re-verified against a fresh fetch of ssd.jpl.nasa.gov/sats/elem/ and
- *   found correct and already per-satellite where the source gives a distinct value (titan 36.4/84.0, iapetus
- *   288.7/78.9) -- the task brief's leading hypothesis for the Saturn group did not hold up. Base elements also
- *   re-verified to match the source exactly. Deriving each body's own orbital angular momentum from its real
- *   Horizons J2000 state vector confirms the pole and inclination are right, but the derived node/periapsis/mean
- *   anomaly disagree with the table by tens of degrees even at the J2000 epoch itself (years=0, so no rate is
- *   involved) -- the same "base elements don't reconstruct the real J2000 position" signature already found and
- *   left unresolved for mimas in round 1. A grid of 8 transcription-convention hypotheses (peri/M column swaps,
- *   +-180 offsets, longitude-vs-anomaly reinterpretations) was tested against all 7 Saturn-group bodies at once and
- *   found no single hypothesis that fixes more than one or two bodies at a time -- i.e. no systematic convention
- *   bug, just idiosyncratic per-body mean-element/osculating-position disagreement, consistent with fix-round-1's
- *   own "Major out-of-scope discovery" that this looked like a system-wide Saturn mean-element issue, not a
- *   four-row one. Left unresolved and documented, like mimas.
- * - deimos, triton: NOT fixed. Both fit the "small error near J2000, growing away" precession-rate signature (like
- *   phobos), not a base-element one. A nodeRateDegPerYear sign grid (the only free rate each has; periRate is 0,
- *   undefined for both bodies' circular orbits) was tested: triton's current (unchanged) sign is already the
- *   better of the two (max 26.57 deg vs. 73.24 deg flipped) and is kept. Deimos's flipped sign scores numerically
- *   better (max 76.08 deg vs. 155.49 deg) but was NOT applied: standard oblateness (J2) perturbation theory predicts
- *   retrograde nodal regression for a near-equatorial prograde satellite -- the sign already in the table -- and a
- *   single binary choice fit to 4 sparse points, against the theoretically-expected sign, is exactly the kind of
- *   fragile fit fix-round-1 rejected for phobos's magnitude search. Left unresolved and documented with the
- *   as-sourced (unchanged) value, like phobos.
+ * Bodies still wrong, per cause (bounds below are the measured worst case plus a small margin):
+ * - europa: the Galilean validation test (element pipeline against astronomy-engine, not Horizons) measures 3.08 deg at
+ *   2050 after the earlier retrograde-apsis sign fix (orbits.ts, europa row); that unchanged exception stays below.
+ * - phobos, deimos, triton: unchanged, the sidereal correction does not explain them (orbits.ts, SIDEREAL_PERIOD_ROWS).
+ *   Phobos and Deimos have 4-5 figure periods and Phobos's node and periapsis carry a ~45 degree libration; Triton is
+ *   retrograde and both signs of the correction were tried (76 and 33 deg against 27 deg as tabulated).
+ * - tethys, dione, rhea, titan, iapetus: after the correction the error is a CONSTANT offset in mean longitude (within
+ *   a few degrees from 1975 to 2050), so it is a base-angle mismatch, not a rate error, and it is wrong at every date
+ *   including today. Two hypotheses were tested: (1) the reviewer's epoch shift (fails, best common shift leaves 32
+ *   deg); (2) reading the table's M column as mean longitude (i.e. subtracting node + peri): it brings Titan to 2.8
+ *   deg and Rhea and Dione to 21 and 35 deg but makes Enceladus, Tethys, Mimas and Iapetus worse, and contradicts the
+ *   table's own stated definition (omega is the argument of periapsis and M the mean anomaly, re-fetched from
+ *   ssd.jpl.nasa.gov/sats/elem/), so it was not applied. Unresolved; the bounds below stay wide.
+ * - mimas: varies from 26 to 50 deg, so not a constant offset; its precession periods are the fastest of the Saturn
+ *   group and it is in a resonance, unresolved.
+ * - ceres: SBDB osculating elements at JD 2461200.5 with no precession, 3.5 deg at 1975, expected two-body drift.
  */
 const PHASE_BOUND_DEG: Partial<Record<BodyId, number>> = {
-  europa: 3.2, // measured 3.0750 at 2050 (jd 2469807.5); see the ruling above and orbits.ts's europa comment.
-  phobos: 170, // measured 165.6253 at 2050 (jd 2469807.5); see orbits.ts's phobos comment.
-  mimas: 160, // measured 156.2515 at 1975 (jd 2442413.5); see orbits.ts's mimas comment.
-  // Task-7 fix-round-2 (see the ruling above): all measured this session after the Uranus pole fix; unrelated
-  // bodies (Saturn group, deimos, triton) are unchanged from before the fix, since no code in this file's pipeline
-  // changed for them.
-  deimos: 160, // measured 155.4874 at 2050 (jd 2469807.5); rate-precision ceiling, same class as phobos.
-  enceladus: 150, // measured 146.7563 at 1975 (jd 2442413.5); base-element mismatch, same class as mimas.
-  tethys: 75, // measured 72.5266 at 2026 (jd 2461304.5); base-element mismatch, same class as mimas.
-  dione: 155, // measured 151.1405 at 2000 (jd 2451545.0); base-element mismatch, same class as mimas.
-  rhea: 177, // measured 175.6488 at 2050 (jd 2469807.5); base-element mismatch, same class as mimas.
-  titan: 173, // measured 171.8480 at 2026 (jd 2461304.5); base-element mismatch, same class as mimas.
-  iapetus: 148, // measured 145.4893 at 1975 (jd 2442413.5); base-element mismatch, same class as mimas.
-  miranda: 177, // measured 175.5992 at 2026 (jd 2461304.5); rate-precision ceiling after the pole fix (J2000 itself is 1.09 deg).
-  ariel: 100, // measured 97.1794 at 2050 (jd 2469807.5); rate-precision ceiling after the pole fix (J2000 itself is 0.22 deg).
-  umbriel: 145, // measured 141.8088 at 2050 (jd 2469807.5); rate-precision ceiling after the pole fix (J2000 itself is 0.05 deg).
-  titania: 21, // measured 20.0649 at 2050 (jd 2469807.5); small residual after the pole fix (J2000 itself is 0.06 deg).
-  oberon: 21, // measured 20.2484 at 2050 (jd 2469807.5); small residual after the pole fix (J2000 itself is 0.13 deg).
-  triton: 27, // measured 26.5703 at 2050 (jd 2469807.5); rate-precision ceiling, same class as phobos.
-  // NOT one of task-7's 13 bodies -- flagged here, not silently folded into the ruling above. Unmasked by this
-  // session's fixes the same way task-7 fix-round-1 unmasked the Saturn group: the `for` loop (see the module
-  // comment) aborts on its first failure, and ceres used to fail after deimos, hiding this. Ceres's elements are
-  // JPL SBDB osculating elements at epoch JD 2461200.5 (~2026) with nodeRateDegPerYear/periRateDegPerYear = 0 (no
-  // precession modelled, by design -- see orbits.ts's dwarf-planet comment); 1975 is 51 years before that epoch,
-  // the largest gap of any reference epoch, and a pure two-body propagation over that gap accumulates real,
-  // un-modelled perturbation drift for a main-belt body -- consistent with the other three epochs (1.9954 / 0.0007
-  // / 1.9302, all near or under the default bound, growing with distance from the 2026 epoch, not a discontinuity).
-  // Investigated and judged a genuine, expected limitation of "elements, no precession" for a dwarf planet, not a
-  // bug; out of this task's scope to fix (would mean modelling precession for the dwarf planets, untouched by the
-  // task-7 brief). Reported as a ruling, same as the in-scope bodies above.
-  ceres: 3.6, // measured 3.5119 at 1975 (jd 2442413.5).
+  europa: 3.2, // measured 3.0750 at 2050 (jd 2469807.5) in the Galilean pipeline test; see the note above.
+  phobos: 170, // measured 165.6253 at 2050 (jd 2469807.5); unresolved, see above.
+  deimos: 160, // measured 155.4874 at 2050 (jd 2469807.5); unresolved, see above.
+  triton: 27, // measured 26.5703 at 2050 (jd 2469807.5); unresolved, see above.
+  mimas: 51, // measured 50.258 at 2000 (jd 2451545.0); unresolved.
+  enceladus: 6.5, // measured 6.246 at 1975 (jd 2442413.5); small offset, roughly constant in time; unresolved.
+  tethys: 63, // measured 62.144 at 2050 (jd 2469807.5); constant base-angle offset, wrong at every date.
+  dione: 152, // measured 151.657 at 1975 (jd 2442413.5); constant base-angle offset, wrong at every date.
+  rhea: 158, // measured 157.435 at 2000 (jd 2451545.0); constant base-angle offset, wrong at every date.
+  titan: 164, // measured 163.175 at 2050 (jd 2469807.5); constant base-angle offset, wrong at every date.
+  iapetus: 144, // measured 142.839 at 1975 (jd 2442413.5); constant base-angle offset, wrong at every date.
+  miranda: 2.7, // measured 2.602 at 2050 (jd 2469807.5).
+  ceres: 3.6, // measured 3.5119 at 1975 (jd 2442413.5); see above.
 };
 const GALILEAN: BodyId[] = ['io', 'europa', 'ganymede', 'callisto'];
 /**
- * Same task-7 ruling as PHASE_BOUND_DEG, for the "distance within 3%" test specifically: mimas's angular
- * discrepancy (see above) also puts it at the wrong point in its (non-negligible, e=0.02) eccentric orbit, so its
- * distance from Saturn is off too. phobos's distance stays under 3% even though its angle does not, so it is not
- * listed here and keeps the default.
- *
- * Task-7 fix-round-2: titan and iapetus (see the PHASE_BOUND_DEG ruling above) also exceed 3% in distance for the
- * same base-element-mismatch reason as mimas; every other body in this session's 13, including the Uranus group
- * whose angle is bounded above, stays under 1% in distance (their errors are almost entirely angular, i.e.
- * rotation within a nearly-circular orbit, not radial), so only these two are listed.
+ * The "distance within 3%" bounds, for the bodies that exceed it because their wrong phase also puts them at the wrong
+ * point on an eccentric orbit (mimas e = 0.02, titan e = 0.029, iapetus e = 0.028). Every other body stays under 1%.
  */
 const DISTANCE_BOUND: Partial<Record<BodyId, number>> = {
-  mimas: 0.037, // measured 0.03494 at 1975 (jd 2442413.5); see orbits.ts's mimas comment.
-  titan: 0.056, // measured 0.05437 at 2000 (jd 2451545.0); see the ruling above.
-  iapetus: 0.05, // measured 0.04845 at 1975 (jd 2442413.5); see the ruling above.
+  mimas: 0.025, // measured 0.02454 at 2000 (jd 2451545.0), after the sidereal correction (was 0.03494).
+  titan: 0.056, // measured 0.05437 at 2000 (jd 2451545.0).
+  iapetus: 0.049, // measured 0.04768 at 1975 (jd 2442413.5), after the sidereal correction (was 0.04845).
 };
 
 const states = (pick: (id: BodyId) => boolean) => HORIZONS_STATES.filter((s) => pick(s.id));

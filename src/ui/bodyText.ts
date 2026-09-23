@@ -17,3 +17,8 @@ export const DEFAULT_MAP_CREDIT = 'Solar System Scope (CC BY 4.0)';
 export function mapNote(hasMap: boolean, credit?: string): string {
   return hasMap ? `Map: ${credit ?? DEFAULT_MAP_CREDIT}` : 'No global map available: plain colour shown.';
 }
+
+/** Surface gravity in m/s² to 3 significant figures, so Deimos (0.00250) does not read 0.00. */
+export function formatGravity(metresPerSecondSquared: number): string {
+  return `${metresPerSecondSquared.toPrecision(3)} m/s²`;
+}

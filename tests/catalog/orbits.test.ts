@@ -53,10 +53,10 @@ describe('bundled orbital elements', () => {
     for (const [id, set] of Object.entries(ELEMENTS)) {
       const b = body(id as BodyId);
       const parent = body(b.parent!);
-      // Note: massKg is `number | null` for Eris, Haumea and Makemake (Task 4 ruling: no sourced mass on any
-      // allowed domain). The `!` below only silences the strict-null-check compile error; it does not change
-      // runtime behavior -- `null! + number` is still `NaN` at runtime, so this check still fails loudly (not
-      // silently) for those 3 bodies exactly as it would with a plain `+`. See task-5-report.md.
+      // massKg is `number | null` for Eris, Haumea and Makemake (Task 4 ruling: no sourced mass on any allowed domain).
+      // The `!` only silences the strict-null-check compile error. At runtime `null + x` is `x` in JavaScript (not NaN),
+      // so for those three the check silently uses the Sun's mass alone, which is physically fine (their mass is
+      // negligible next to the Sun's) and well inside the 0.05% dwarf-planet tolerance.
       const mu = G * (parent.massKg! + b.massKg!);
       const keplerDays = (2 * Math.PI * Math.sqrt((set.elements.aKm * 1000) ** 3 / mu)) / 86_400;
       const fromMotion = 360 / set.elements.meanMotionDegPerDay;
@@ -67,11 +67,15 @@ describe('bundled orbital elements', () => {
     for (const [id, set] of Object.entries(ELEMENTS)) {
       const el = set.elements;
       const catalogDays = body(id as BodyId).orbitPeriodDays!;
-      const sidereal = 360 / el.meanMotionDegPerDay;
-      // If the table's period is the anomalistic one, the sidereal period differs by the periapsis rate.
-      const other = 360 / (el.meanMotionDegPerDay + el.periRateDegPerYear / 365.25);
+      // The stored meanMotionDegPerDay is a mean-ANOMALY rate. Depending on the table row, the tabulated P was either
+      // that rate (anomalistic; Jupiter rows, small rates), or the mean-LONGITUDE rate (sidereal; the rows listed in
+      // SIDEREAL_PERIOD_ROWS in orbits.ts, which were converted). Accept the sidereal period reconstructed by adding
+      // the node and periapsis rates back, or the periapsis rate alone, or the raw value.
+      const raw = 360 / el.meanMotionDegPerDay;
+      const longitude = 360 / (el.meanMotionDegPerDay + (el.nodeRateDegPerYear + el.periRateDegPerYear) / 365.25);
+      const periOnly = 360 / (el.meanMotionDegPerDay + el.periRateDegPerYear / 365.25);
       const tolerance = PERIOD_TOLERANCE_OVERRIDE[id as BodyId] ?? 0.0005;
-      expect(Math.min(relDiff(sidereal, catalogDays), relDiff(other, catalogDays)), id).toBeLessThan(tolerance);
+      expect(Math.min(relDiff(raw, catalogDays), relDiff(longitude, catalogDays), relDiff(periOnly, catalogDays)), id).toBeLessThan(tolerance);
     }
   });
 });
@@ -93,6 +97,16 @@ describe('bundled IAU rotation constants', () => {
       const periodDays = 360 / Math.abs(r.wRateDegPerDay);
       if (b.kind === 'moon') expect(relDiff(periodDays, b.orbitPeriodDays!), id).toBeLessThan(0.005);
       else expect(relDiff(periodDays * 24, Math.abs(b.rotationPeriodH)), id).toBeLessThan(0.01);
+    }
+  });
+});
+
+describe('mean-motion convention (sidereal versus anomalistic period)', () => {
+  it('stores a mean-anomaly rate that reproduces the tabulated sidereal period for the converted rows', () => {
+    for (const id of ['mimas', 'enceladus', 'tethys', 'dione', 'rhea', 'titan', 'iapetus', 'miranda', 'ariel', 'umbriel', 'titania', 'oberon'] as BodyId[]) {
+      const el = ELEMENTS[id]!.elements;
+      const longitudeRate = el.meanMotionDegPerDay + (el.nodeRateDegPerYear + el.periRateDegPerYear) / 365.25;
+      expect(relDiff(360 / longitudeRate, body(id).orbitPeriodDays!), id).toBeLessThan(2e-5);
     }
   });
 });

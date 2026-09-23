@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_MAP_CREDIT, kindLabel, mapNote } from '../../src/ui/bodyText';
+import { DEFAULT_MAP_CREDIT, formatGravity, kindLabel, mapNote } from '../../src/ui/bodyText';
 
 describe('kindLabel', () => {
   it('names each kind, and the parent of a moon', () => {
@@ -23,5 +23,15 @@ describe('mapNote', () => {
     expect(mapNote(true)).toBe(`Map: ${DEFAULT_MAP_CREDIT}`);
     expect(mapNote(true, 'NASA/JPL-Caltech/USGS')).toBe('Map: NASA/JPL-Caltech/USGS');
     expect(DEFAULT_MAP_CREDIT).toContain('CC BY 4.0');
+  });
+});
+
+describe('formatGravity', () => {
+  it('keeps three significant figures so tiny moons do not show zero', () => {
+    expect(formatGravity(0.0025)).toBe('0.00250 m/s²');
+    expect(formatGravity(0.00577)).toBe('0.00577 m/s²');
+    expect(formatGravity(0.284)).toBe('0.284 m/s²');
+    expect(formatGravity(9.81)).toBe('9.81 m/s²');
+    expect(formatGravity(274)).toBe('274 m/s²');
   });
 });

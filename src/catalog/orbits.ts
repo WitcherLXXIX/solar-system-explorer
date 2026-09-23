@@ -2,6 +2,7 @@ import type { BodyId } from './bodies';
 import type { PlaneFrame } from '../ephemeris/frames';
 import type { IauRotation } from '../ephemeris/iau';
 import type { OrbitalElements } from '../ephemeris/kepler';
+import { DAYS_PER_YEAR } from '../units';
 
 /** Mean orbital elements of one body relative to its parent, with the reference plane they are measured in. */
 export interface ElementSet {
@@ -51,7 +52,7 @@ const URANUS_POLE_SOURCE = 'antipode of NASA NSSDC Uranus Fact Sheet (nssdc.gsfc
 const PLUTO_POLE_SOURCE = 'NASA NSSDC Pluto Fact Sheet (nssdc.gsfc.nasa.gov/planetary/factsheet/plutofact.html), "Positive Pole of Rotation", epoch J2000';
 const SBDB = 'JPL Small-Body Database API (ssd-api.jpl.nasa.gov/sbdb.api, full-prec=true), osculating elements, J2000 ecliptic';
 
-export const ELEMENTS: Partial<Record<BodyId, ElementSet>> = {
+const TABLE: Partial<Record<BodyId, ElementSet>> = {
   // --- Mars (Laplace frame; ephemeris MAR099; ref. Brozović, Jacobson, Park (2025) AJ, 'Revised Ephemerides of the
   // Martian Satellites, Phobos and Deimos') ---
   // Phobos: re-verified this session (2x independent WebFetch re-reads of ssd.jpl.nasa.gov/sats/elem/, both
@@ -167,6 +168,9 @@ export const ELEMENTS: Partial<Record<BodyId, ElementSet>> = {
   //     periods (Pnode=0.986yr, Papsis=0.493yr) are faster even than Phobos's, so it inherits the same
   //     2-3-significant-figure source-precision ceiling described on Phobos above, compounding the base-element
   //     mismatch. No sign-flip of either rate (the fix that worked for Io/Europa) resolves this either.
+  // Final-fix wave: both investigations above were run BEFORE the sidereal-period correction (SIDEREAL_PERIOD_ROWS below) and
+  // their "rate-precision ceiling" explanation is superseded: Mimas's P is the sidereal period, so its precession was
+  // counted twice. After the correction the error is 26-50 deg at the four epochs (was 50-156), still unresolved.
   // This is reported as an open, unresolved discrepancy, not papered over: PHASE_BOUND_DEG and a distance-test
   // override are recorded in moons.test.ts with the measured values. See task-7-fix1-report.md.
   mimas: {
@@ -200,8 +204,10 @@ export const ELEMENTS: Partial<Record<BodyId, ElementSet>> = {
       // rulings"): with e = 0.001 (nearly circular), the argument of periapsis -- and hence its fitted precession
       // rate -- becomes numerically ill-conditioned as eccentricity approaches zero (a known effect in celestial
       // mechanics), so this is a fit artifact, not a physically meaningful precession; rendering it literally would
-      // visibly and implausibly spin Tethys's periapsis every few hours. Set to 0 for rendering purposes; this does
-      // not affect meanMotionDegPerDay (position accuracy is unaffected), only the (omitted) orbit-line precession.
+      // visibly and implausibly spin Tethys's periapsis every few hours. Set to 0 for rendering purposes. This also
+      // leaves the sidereal-to-anomaly correction (SIDEREAL_PERIOD_ROWS) without a periapsis term for Tethys. Note that
+      // Tethys is 58-62 deg off Horizons at every epoch (a base-angle offset, see moons.test.ts), so this choice is not
+      // what limits its accuracy, but "position accuracy unaffected" would overstate it.
       nodeRateDegPerYear: -360 / 4.982, periRateDegPerYear: 0,
     },
     source: `${SATS_ELEM}, row Tethys (603), ephemeris SAT441, frame Laplace`,
@@ -249,7 +255,9 @@ export const ELEMENTS: Partial<Record<BodyId, ElementSet>> = {
 
   // --- Uranus (equatorial frame; ephemeris URA182; ref. Jacobson & Park (2025) AJ 169:65-82, 'The Orbits of
   // Uranus, Its Satellites and Rings...'). The table gives no per-row pole for equatorial-frame rows, so the frame
-  // pole is Uranus's own NSSDC-sourced rotation pole (see URANUS_POLE above). ---
+  // pole is Uranus's own NSSDC-sourced rotation pole (see URANUS_POLE above). The tabulated P of every Uranus row is the
+  // SIDEREAL period, so meanMotionDegPerDay is converted to a mean-anomaly rate (SIDEREAL_PERIOD_ROWS below); before that
+  // fix these rows drifted by up to 176 deg, which earlier notes wrongly blamed on source rate precision. ---
   miranda: {
     frame: URANUS_POLE,
     elements: {
@@ -374,6 +382,41 @@ export const ELEMENTS: Partial<Record<BodyId, ElementSet>> = {
     source: `${SBDB}, sstr=Makemake, epoch JD 2461200.5 TDB`,
   },
 };
+
+/**
+ * Rows whose tabulated period P is the SIDEREAL period (the mean-longitude rate), not the anomalistic one. Verified per
+ * row by comparing 360/P with the independent NSSDC sidereal period in the catalog (tests/catalog/orbits.test.ts): these
+ * rows match it to 2e-5 or better, while the Jupiter rows (io, europa, ganymede, callisto) only match once the
+ * precession is added, i.e. their P is anomalistic (the mean-anomaly rate, which is what planePosition wants).
+ * planePosition advances the mean anomaly at meanMotionDegPerDay and separately adds the node and periapsis rates to
+ * the angles, so the mean longitude moves at meanMotion + nodeRate + periRate. For a sidereal P that would count the
+ * precession twice, so for these rows the mean-anomaly rate stored is 360/P - (nodeRate + periRate)/365.25.
+ * (Before this correction, all Uranus rows and every Saturn row drifted; see final-fix-report.md.)
+ * phobos, deimos and triton are deliberately NOT converted. Phobos and Deimos have periods of only 4-5 figures, too
+ * coarse to tell the two conventions apart (both miss the catalog period by 5e-5 to 1e-3). Converting them was tried
+ * and left the error at 91 deg (Phobos), 131 deg (Deimos) and 76 deg (Triton), against 166, 155 and 27 deg unconverted,
+ * so the change does not explain their error. Triton is retrograde; a retrograde-sign variant of the correction
+ * (longitude = node - (peri + M)) gave 33 deg, also no better than unconverted. They stay as tabulated and are bounded
+ * honestly in moons.test.ts.
+ */
+const SIDEREAL_PERIOD_ROWS: readonly BodyId[] = [
+  'mimas', 'enceladus', 'tethys', 'dione', 'rhea', 'titan', 'iapetus',
+  'miranda', 'ariel', 'umbriel', 'titania', 'oberon',
+];
+
+/** Mean-anomaly rate (deg/day) from a sidereal period, removing the node and periapsis precession that planePosition adds back. */
+export function anomalyRateFromSidereal(el: OrbitalElements): number {
+  return el.meanMotionDegPerDay - (el.nodeRateDegPerYear + el.periRateDegPerYear) / DAYS_PER_YEAR;
+}
+
+export const ELEMENTS: Partial<Record<BodyId, ElementSet>> = Object.fromEntries(
+  Object.entries(TABLE).map(([id, set]) => [
+    id,
+    SIDEREAL_PERIOD_ROWS.includes(id as BodyId)
+      ? { ...set, elements: { ...set.elements, meanMotionDegPerDay: anomalyRateFromSidereal(set.elements) } }
+      : set,
+  ]),
+);
 
 /**
  * IAU rotation constants (linear terms only), for the bodies whose full set (pole R.A./Dec. AND a prime-meridian
