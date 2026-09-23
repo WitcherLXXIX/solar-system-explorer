@@ -1,7 +1,7 @@
 # Solar System Explorer, Phase 4: Deep Space
 
 Date: 2026-09-23
-Status: design approved in conversation, awaiting written-spec review
+Status: design approved
 Builds on: `2026-09-20-solar-system-core-design.md` (phase 1), `2026-09-20-planet-fidelity-design.md` (phase 2a), `2026-09-21-moons-dwarfs-design.md` (phase 2b), and `2026-09-23-small-bodies-design.md` (phase 3). Phases 1-2b are merged to `master`; phase 3 is a separate, not-yet-merged branch `phase-3` at the time this spec was written.
 
 ## Goal
