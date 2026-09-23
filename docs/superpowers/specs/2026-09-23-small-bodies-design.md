@@ -1,7 +1,7 @@
 # Solar System Explorer, Phase 3: Small Bodies
 
 Date: 2026-09-23
-Status: design approved in conversation, awaiting written-spec review
+Status: design approved
 Builds on: `2026-09-20-solar-system-core-design.md` (phase 1), `2026-09-20-planet-fidelity-design.md` (phase 2a) and `2026-09-21-moons-dwarfs-design.md` (phase 2b), all merged to `master`.
 
 ## Goal
