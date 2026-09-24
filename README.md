@@ -54,6 +54,10 @@ Added: the camera limit is raised to 1e17 m and the far plane to 1e18 m; twelve 
 
 **Deferred.** Stars beyond 11.4 ly, stellar physics, a galactic backdrop, time-accurate proper motion, an asymmetric heliosphere, individually named Oort objects, star glow.
 
+## Minimum-altitude view (phase 5 finding)
+
+The flat, washed-out look at Earth's 12.7 km camera floor is not caused by the cloud shell. Shots at 12.7 km over desert and ocean (`--view earth,12740,0,25` and `--view earth,12740,60,25`) are pixel-for-pixel the same with the cloud shell hidden as with it drawn. With effects off the view is still a single flat colour: the 8K map has about 4.9 km per texel, so at 12.7 km a texel fills a large part of the screen and the picture is a magnified, featureless patch. That is the map's resolution, not a bug. The atmosphere adds a slight pale haze and a soft glow on top (compare effects on with effects off), but it does not remove any detail that the map has. (Note that `--view`'s pitch is the camera's latitude, so `-89` looks at the polar night side and is nearly black in September.) Real detail here would need a higher-resolution map or a procedural detail layer.
+
 ## Run
 
     npm install
