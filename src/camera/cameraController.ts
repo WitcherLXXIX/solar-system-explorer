@@ -2,7 +2,8 @@ import type { BodyId } from '../catalog/bodies';
 import { add, clamp, length, lerp, lerpAngle, lerpVec, scale, sub, type Vec3 } from '../math';
 import { DEG } from '../units';
 
-export const MAX_CAMERA_DISTANCE_M = 1.2e13;
+/** Phase-4 "scale knob" (with FAR_M): about 10.6 light-years, past Proxima Centauri (4.02e16 m). */
+export const MAX_CAMERA_DISTANCE_M = 1e17;
 export const MIN_ALTITUDE_FRACTION = 0.002;
 export const FLIGHT_SECONDS = 4;
 export const FLY_TO_RADII = 4;

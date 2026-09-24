@@ -6,6 +6,13 @@ import { clamp, smoothstep, sub, type Vec3 } from '../math';
  */
 export const SPRITE_THRESHOLD_PX = 3;
 
+/**
+ * Camera far plane. Phase-4 "scale knob": 10x the maximum camera distance, so 61 Cygni A (1.079e17 m from the Sun) is never
+ * clipped even when the camera sits at the 1e17 m maximum on the far side (up to 2.08e17 m away). The logarithmic depth
+ * buffer (log2(1e18) is about 60) covers this range.
+ */
+export const FAR_M = 1e18;
+
 /** World frame (ecliptic, z north) to Three.js axes (y up). A proper rotation. */
 export function eclipticToThree(v: Vec3): Vec3 {
   return [v[0], v[2], -v[1]];
@@ -32,9 +39,10 @@ export function orbitLineOpacity(distanceToBodyM: number, orbitRadiusM: number):
 }
 
 /**
- * Phase-4 "scale knob": the 1e7 m upper cap (with FAR_M, MAX_CAMERA_DISTANCE_M, MIN_ALTITUDE_FRACTION and SPRITE_THRESHOLD_PX).
- * It is kept low so that a zoomed-out camera passing through a body is not cut off by a huge near plane;
- * the logarithmic depth buffer (far 1e15 m) keeps depth precision fine at this ratio.
+ * Phase-4 "scale knob" that deliberately stays put: the 1e7 m upper cap. It is kept low so that a zoomed-out camera passing
+ * through a body is not cut off by a huge near plane, and so that no sprite nearer than `0.05 * altitude` is clipped (a near
+ * plane raised toward 1e17 would make the Sun vanish when focused on Neptune at 1e15 m). The logarithmic depth buffer's
+ * precision does not depend on the near plane.
  */
 export function nearPlane(altitudeM: number): number {
   return clamp(altitudeM * 0.05, 1, 1e7);

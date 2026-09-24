@@ -69,6 +69,8 @@ export interface BeltSpec {
   /** Inclination (degrees) is Rayleigh distributed with this scale and capped. */
   inclinationSigmaDeg: number;
   inclinationMaxDeg: number;
+  /** (Phase-4) orbit planes uniform on the sphere (isotropic distribution). Used for the Oort cloud. */
+  isotropic?: boolean;
 }
 
 /** About 4000 points between 2.1 and 3.3 AU. Every number is a schematic tuning value, not a measured population statistic. */

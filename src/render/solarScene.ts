@@ -6,7 +6,7 @@ import { DEG } from '../units';
 import { KUIPER_BELT_SPEC, MAIN_BELT_SPEC, generateBelt } from '../ephemeris/beltField';
 import { BeltPoints } from './beltPoints';
 import { BodyView, type RenderInfo } from './bodyView';
-import { SPRITE_THRESHOLD_PX, nearPlane, orbitLineOpacity, toRenderSpace } from './cameraRelative';
+import { FAR_M, SPRITE_THRESHOLD_PX, nearPlane, orbitLineOpacity, toRenderSpace } from './cameraRelative';
 import { HI_RES_BUDGET, chooseHiRes, wantsHiTexture, type HiResCandidate } from './lod';
 import { OrbitLine } from './orbitLine';
 import { beltOpacity, moonOrbitOpacity, spriteHiddenByParent } from './orbitFade';
@@ -18,8 +18,6 @@ import { loadTexture } from './textures';
 export type { RenderInfo } from './bodyView';
 
 export const FOV_DEG = 50;
-/** Phase-4 "scale knob", together with the nearPlane cap, MAX_CAMERA_DISTANCE_M, MIN_ALTITUDE_FRACTION and SPRITE_THRESHOLD_PX. */
-export const FAR_M = 1e15;
 
 export interface FrameInput {
   frame: Frame;
