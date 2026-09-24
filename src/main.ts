@@ -88,7 +88,7 @@ function loop(now: number): void {
   const pose = camera.update(dt);
   lastInput = {
     frame, cameraPos: pose.position, focusPoint: pose.focusPoint,
-    altitudeM: pose.altitudeM, date: clock.date, showOrbits: toggles.orbits,
+    altitudeM: pose.altitudeM, date: clock.date, showOrbits: toggles.orbits, showBelts: toggles.belts,
   };
   const info = scene.render(lastInput);
 
@@ -149,6 +149,9 @@ declare global {
       hiTextureCount(): number;
       pixelStats(): { lit: number; warm: number; blue: number };
       fps(ms: number): Promise<number>;
+      beltCounts(): { main: number; kuiper: number };
+      setBelts(on: boolean): void;
+      beltsVisible(): boolean;
     };
   }
 }
@@ -176,6 +179,9 @@ window.__solar = {
   textureCount: () => scene.textureCount(),
   hiTextureCount: () => scene.hiTextureCount(),
   pixelStats: () => scene.pixelStats(),
+  beltCounts: () => scene.beltPointCounts(),
+  setBelts: (on) => toggles.set('belts', on),
+  beltsVisible: () => scene.beltsVisible(),
   fps: async (ms) => {
     const startFrames = frames;
     const startTime = performance.now();

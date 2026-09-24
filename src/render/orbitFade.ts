@@ -42,3 +42,13 @@ export interface DotOnScreen {
 export function spriteHiddenByParent(moon: DotOnScreen, parent: DotOnScreen): boolean {
   return Math.hypot(moon.x - parent.x, moon.y - parent.y) < (moon.drawnPx + parent.drawnPx) / 2;
 }
+
+/** Belt points are invisible below this camera altitude above the focused body (planet scale) and reach full strength at BELT_FADE_HIGH_M. Tunable. */
+export const BELT_FADE_LOW_M = 2e9;
+export const BELT_FADE_HIGH_M = 2e10;
+export const BELT_MAX_OPACITY = 0.8;
+
+/** Opacity of both belts from the camera's altitude: gone at planet scale (a few far dots would only look like stars), full at system scale. */
+export function beltOpacity(altitudeM: number): number {
+  return BELT_MAX_OPACITY * smoothstep(BELT_FADE_LOW_M, BELT_FADE_HIGH_M, altitudeM);
+}

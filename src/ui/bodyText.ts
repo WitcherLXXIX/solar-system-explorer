@@ -37,3 +37,6 @@ export const SMALL_BODY_NOTE = 'Orbit: JPL Small-Body Database osculating elemen
 
 /** Shown for comets: the tail is an effect, not physics. */
 export const TAIL_NOTE = 'Tail: a stylised effect that always points away from the Sun and is longest near the Sun; it is not a physical simulation.';
+
+/** What the belts are: shown as the Belts toggle's tooltip and in the footer. */
+export const BELT_NOTE = 'The asteroid and Kuiper belts are schematic: thousands of statistically placed points that orbit in real time, not individual real objects. The named asteroids, Kuiper objects and comets are real.';

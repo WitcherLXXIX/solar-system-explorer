@@ -3,11 +3,13 @@ import { BODIES, type BodyId } from '../catalog/bodies';
 import type { Frame } from '../ephemeris/frame';
 import { length, sub, type Vec3 } from '../math';
 import { DEG } from '../units';
+import { KUIPER_BELT_SPEC, MAIN_BELT_SPEC, generateBelt } from '../ephemeris/beltField';
+import { BeltPoints } from './beltPoints';
 import { BodyView, type RenderInfo } from './bodyView';
 import { SPRITE_THRESHOLD_PX, nearPlane, orbitLineOpacity, toRenderSpace } from './cameraRelative';
 import { HI_RES_BUDGET, chooseHiRes, wantsHiTexture, type HiResCandidate } from './lod';
 import { OrbitLine } from './orbitLine';
-import { moonOrbitOpacity, spriteHiddenByParent } from './orbitFade';
+import { beltOpacity, moonOrbitOpacity, spriteHiddenByParent } from './orbitFade';
 import { SPRITE_MIN_SIZE_PX } from './sprite';
 import { classifyPixel } from './pixelStats';
 import { TextureManager } from './textureManager';
@@ -26,6 +28,7 @@ export interface FrameInput {
   altitudeM: number;
   date: Date;
   showOrbits: boolean;
+  showBelts: boolean;
 }
 
 export class SolarScene {
@@ -41,6 +44,8 @@ export class SolarScene {
   private lastInput: FrameInput | null = null;
   private effectsEnabled = true;
   private granted = new Set<BodyId>();
+  private readonly mainBelt = new BeltPoints(generateBelt(MAIN_BELT_SPEC), '#b9b1a3', 2);
+  private readonly kuiperBelt = new BeltPoints(generateBelt(KUIPER_BELT_SPEC), '#8fa8c8', 2);
 
   constructor(canvas: HTMLCanvasElement, startDate: Date) {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, logarithmicDepthBuffer: true });
@@ -57,6 +62,7 @@ export class SolarScene {
         this.scene.add(orbit.line);
       }
     }
+    this.scene.add(this.mainBelt.points, this.kuiperBelt.points);
   }
 
   get fovYRad(): number {
@@ -77,6 +83,14 @@ export class SolarScene {
   /** Number of hi-res (8K) textures actually resident on the GPU (the granted set alone would hide a leak). */
   hiTextureCount(): number {
     return this.textures.hiCount();
+  }
+  /** Number of points in each belt. */
+  beltPointCounts(): { main: number; kuiper: number } {
+    return { main: this.mainBelt.count, kuiper: this.kuiperBelt.count };
+  }
+  /** True when both belts were drawn in the last frame. */
+  beltsVisible(): boolean {
+    return this.mainBelt.points.visible && this.kuiperBelt.points.visible;
   }
   /** Number of textures alive on the GPU. */
   textureCount(): number {
@@ -153,6 +167,9 @@ export class SolarScene {
         orbit.update(parentPos, input.cameraPos, input.date, opacity);
       }
     }
+    const belts = input.showBelts ? beltOpacity(input.altitudeM) : 0;
+    this.mainBelt.update(input.date, input.cameraPos, belts);
+    this.kuiperBelt.update(input.date, input.cameraPos, belts);
     this.renderer.render(this.scene, this.camera);
     return info;
   }
