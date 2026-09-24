@@ -36,3 +36,11 @@ export function nearbyStarPositionM(star: StarSky): Vec3 {
   const decDeg = dmsToDegrees(star.dec.sign, star.dec.d, star.dec.m, star.dec.s) + (star.schematicOffsetNorthArcsec ?? 0) / 3600;
   return skyToEcliptic(hmsToHours(star.ra.h, star.ra.m, star.ra.s), decDeg, star.distanceLy * LIGHT_YEAR_M);
 }
+
+/**
+ * The unit direction (ecliptic J2000 axes) of a sky object from its J2000 right ascension (hours) and declination (degrees).
+ * The night sky's stars use only this: their real direction, not their real distance.
+ */
+export function raDecToDirection(raHours: number, decDeg: number): Vec3 {
+  return skyToEcliptic(raHours, decDeg, 1);
+}
