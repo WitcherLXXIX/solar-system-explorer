@@ -42,7 +42,7 @@ describe('skyToEcliptic', () => {
     expect(p[2]).toBeCloseTo(-0.6374946, 5);
   });
   it('keeps the requested distance', () => {
-    expect(length(skyToEcliptic(3.3, 41.7, 4.02e16))).toBeCloseTo(4.02e16, 0);
+    expect(length(skyToEcliptic(3.3, 41.7, 4.02e16)) / 4.02e16).toBeCloseTo(1, 12);
   });
 });
 
