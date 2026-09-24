@@ -93,7 +93,7 @@ function loop(now: number): void {
   const pose = camera.update(dt);
   lastInput = {
     frame, cameraPos: pose.position, focusPoint: pose.focusPoint,
-    altitudeM: pose.altitudeM, date: clock.date, showOrbits: toggles.orbits, showBelts: toggles.belts,
+    altitudeM: pose.altitudeM, date: clock.date, showOrbits: toggles.orbits, showBelts: toggles.belts, showDeepSpace: true,
   };
   const info = scene.render(lastInput);
 

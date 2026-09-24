@@ -4,7 +4,10 @@ import type { Frame } from '../ephemeris/frame';
 import { length, sub, type Vec3 } from '../math';
 import { DEG } from '../units';
 import { KUIPER_BELT_SPEC, MAIN_BELT_SPEC, generateBelt } from '../ephemeris/beltField';
+import { generateOortCloud, oortOpacity } from '../ephemeris/oortField';
 import { BeltPoints } from './beltPoints';
+import { HeliosphereEffect } from './heliosphere';
+import { heliosphereOpacity } from './heliosphereMath';
 import { BodyView, type RenderInfo } from './bodyView';
 import { FAR_M, SPRITE_THRESHOLD_PX, nearPlane, orbitLineOpacity, toRenderSpace } from './cameraRelative';
 import { HI_RES_BUDGET, chooseHiRes, wantsHiTexture, type HiResCandidate } from './lod';
@@ -27,6 +30,7 @@ export interface FrameInput {
   date: Date;
   showOrbits: boolean;
   showBelts: boolean;
+  showDeepSpace: boolean;
 }
 
 export class SolarScene {
@@ -44,6 +48,8 @@ export class SolarScene {
   private granted = new Set<BodyId>();
   private readonly mainBelt = new BeltPoints(generateBelt(MAIN_BELT_SPEC), '#b9b1a3', 2);
   private readonly kuiperBelt = new BeltPoints(generateBelt(KUIPER_BELT_SPEC), '#8fa8c8', 2);
+  private readonly oort = new BeltPoints(generateOortCloud(), '#9db8d8', 1.5);
+  private readonly heliosphere = new HeliosphereEffect();
 
   constructor(canvas: HTMLCanvasElement, startDate: Date) {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, logarithmicDepthBuffer: true });
@@ -60,7 +66,7 @@ export class SolarScene {
         this.scene.add(orbit.line);
       }
     }
-    this.scene.add(this.mainBelt.points, this.kuiperBelt.points);
+    this.scene.add(this.mainBelt.points, this.kuiperBelt.points, this.oort.points, ...this.heliosphere.objects);
   }
 
   get fovYRad(): number {
@@ -87,6 +93,20 @@ export class SolarScene {
     return { main: this.mainBelt.count, kuiper: this.kuiperBelt.count };
   }
   /** True when both belts were drawn in the last frame. */
+  oortPointCount(): number {
+    return this.oort.count;
+  }
+
+  /** True when the Oort cloud was drawn in the last frame. */
+  oortVisible(): boolean {
+    return this.oort.points.visible;
+  }
+
+  /** True when the heliosphere shells were drawn in the last frame. */
+  heliosphereVisible(): boolean {
+    return this.heliosphere.shown;
+  }
+
   beltsVisible(): boolean {
     return this.mainBelt.points.visible && this.kuiperBelt.points.visible;
   }
@@ -172,6 +192,9 @@ export class SolarScene {
     const belts = input.showBelts ? beltOpacity(input.altitudeM) : 0;
     this.mainBelt.update(input.date, input.cameraPos, belts);
     this.kuiperBelt.update(input.date, input.cameraPos, belts);
+    const deep = input.showDeepSpace ? 1 : 0;
+    this.oort.update(input.date, input.cameraPos, deep * oortOpacity(input.altitudeM));
+    this.heliosphere.update(sunRel, deep * heliosphereOpacity(input.altitudeM), this.camera.near);
     this.renderer.render(this.scene, this.camera);
     return info;
   }

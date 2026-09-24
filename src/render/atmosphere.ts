@@ -5,7 +5,7 @@ import { MIE_EXTINCTION_FACTOR, SHADOW_EDGE, useSkyPass } from './atmosphereMath
 import { glslFloat } from './glsl';
 import { ATMOSPHERE_MIN_PX } from './lod';
 
-const VERT = /* glsl */ `
+export const ATMOSPHERE_VERT = /* glsl */ `
 #include <common>
 #include <logdepthbuf_pars_vertex>
 varying vec3 vRayDir;
@@ -119,7 +119,7 @@ export class AtmosphereEffect implements BodyEffect {
     if (!spec) throw new Error(`${data.id} has no atmosphere`);
     this.shellRadius = 1 + spec.heightFraction;
     this.material = new THREE.ShaderMaterial({
-      vertexShader: VERT,
+      vertexShader: ATMOSPHERE_VERT,
       fragmentShader: ATMOSPHERE_FRAG,
       uniforms: {
         uCamPos: { value: new THREE.Vector3() },
