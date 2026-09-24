@@ -25,7 +25,7 @@ try {
     await page.waitForTimeout(25);
   }
   const far = await page.evaluate(() => window.__solar.altitudeM());
-  check(far > 1e13, `zoomed out to the maximum (${far.toExponential(2)} m)`);
+  check(far > 9.9e16, `zoomed out to the maximum (${far.toExponential(2)} m, about 10.6 ly)`);
 
   for (let i = 0; i < 60; i++) {
     await page.mouse.wheel(0, -250);
@@ -162,12 +162,12 @@ try {
   check(phobosAlt < 30, `Phobos's minimum altitude is 0.2% of its radius (${phobosAlt.toFixed(1)} m)`);
   check((await page.evaluate(() => window.__solar.litPixels())) > 500, 'Phobos still renders at its minimum altitude');
 
-  // No clutter at the full-system view, and the frame rate with all 43 bodies.
+  // No clutter at the full-system view, and the frame rate with all 55 bodies.
   await view('2026-09-20T12:00:00Z', 'sun', 1e12, 0, 60);
   const systemLabels = await page.evaluate(() => window.__solar.labelsShown());
   check(!systemLabels.some((id) => MOON_IDS.includes(id)), `no moon labels at the full-system view (${systemLabels.join(', ')})`);
   const fpsSystem = await page.evaluate(() => window.__solar.fps(3000));
-  console.log(`INFO  frame rate at the full-system view with all 43 bodies: ${fpsSystem.toFixed(1)} fps`);
+  console.log(`INFO  frame rate at the full-system view with all 55 bodies:${fpsSystem.toFixed(1)} fps`);
   check(fpsSystem >= 15, `frame rate at the full-system view is usable (${fpsSystem.toFixed(1)} fps; target 30 or better)`);
   await view('2026-09-20T12:00:00Z', 'jupiter', 4e9, 30, 15);
   const fpsJupiter = await page.evaluate(() => window.__solar.fps(3000));
@@ -247,15 +247,114 @@ try {
   const labelsNow = await page.evaluate(() => window.__solar.labelsShown());
   check(!labelsNow.some((id) => SMALL_IDS.includes(id)), `no small-body labels at the full-system view (${labelsNow.join(', ')})`);
 
-  // Frame rate with everything on: 43 bodies and orbit lines, both belts (7000 points), a comet tail.
+  // Frame rate with everything on: 55 bodies and orbit lines, both belts (7000 points), a comet tail.
   const fpsAll = await page.evaluate(() => window.__solar.fps(3000));
-  console.log(`INFO  frame rate at the full-system view with 43 bodies and both belts: ${fpsAll.toFixed(1)} fps`);
+  console.log(`INFO  frame rate at the full-system view with 55 bodies and both belts: ${fpsAll.toFixed(1)} fps`);
   check(fpsAll >= 15, `frame rate with the full population is usable (${fpsAll.toFixed(1)} fps; target 30 or better)`);
   await view('1986-02-09T12:00:00Z', 'halley', 1e11, 90, 10);
   const fpsTail = await page.evaluate(() => window.__solar.fps(3000));
   console.log(`INFO  frame rate near Halley with its tail: ${fpsTail.toFixed(1)} fps`);
   check(fpsTail >= 15, `frame rate near a comet with its tail is usable (${fpsTail.toFixed(1)} fps; target 30 or better)`);
   await shot('phase3-footer');
+
+  // ---- phase 4: deep space ----
+  const STAR_IDS = ['proxima', 'alphacena', 'alphacenb', 'barnard', 'wolf359', 'lalande21185', 'siriusa', 'siriusb', 'ross154', 'epseri', 'ross128', 'cygni61a'];
+
+  // The stars are listed in their own group and every one can be flown to.
+  await page.click('button[aria-label="Show the nearby stars"]');
+  const starRows = await page.$$eval('#bodies .body-btn', (els) => els.map((e) => e.textContent));
+  check(['Proxima Centauri', 'Sirius A', 'Sirius B', '61 Cygni A'].every((n) => starRows.includes(n)), 'the Nearby stars group lists the stars');
+  for (const id of STAR_IDS) {
+    await view('2026-09-20T12:00:00Z', 'sun', 1e12, 0, 60);
+    await page.evaluate((target) => window.__solar.flyTo(target), id);
+    await page.waitForFunction(() => !window.__solar.isFlying(), null, { timeout: 30000 });
+    check((await page.evaluate(() => window.__solar.focusId())) === id, `flew to ${id}`);
+    check((await page.evaluate(() => window.__solar.litPixels())) > 500, `${id} renders as a disc after the flight`);
+    if (id === 'proxima') await shot('phase4-proxima');
+  }
+  // Every star can be focused and gives a small finite minimum altitude.
+  for (const id of STAR_IDS) {
+    await view('2026-09-20T12:00:00Z', id, 1, 0, 20);
+    const alt = await page.evaluate(() => window.__solar.altitudeM());
+    check(Number.isFinite(alt) && alt > 0 && alt < 1e7, `${id}: minimum altitude is small and finite (${alt.toFixed(1)} m)`);
+  }
+
+  // Maximum zoom from the Sun: the camera reaches about 10.6 ly, and several stars are visible with labels. The best of
+  // eight look directions is used because which stars fall inside the 50 degree field depends on the direction.
+  let bestStars = [];
+  for (const [yaw, pitch] of [[0, 30], [90, 30], [180, 30], [270, 30], [0, -30], [90, -30], [180, -30], [270, -30]]) {
+    await view('2026-09-20T12:00:00Z', 'sun', 1e17, yaw, pitch);
+    const inView = await page.evaluate(() => window.__solar.starsInView());
+    if (inView.length > bestStars.length) bestStars = inView;
+  }
+  const maxAlt = await page.evaluate(() => window.__solar.altitudeM());
+  check(maxAlt > 9.9e16, `the camera reaches 1e17 m (${maxAlt.toExponential(2)} m)`);
+  console.log(`INFO  most stars in view at maximum zoom: ${bestStars.join(', ')}`);
+  check(bestStars.length >= 3, `several stars are visible at maximum zoom (${bestStars.length})`);
+  await shot('phase4-max-zoom');
+
+  // Alpha Centauri A and B are a close pair, not one point (about 21 AU apart).
+  await view('2026-09-20T12:00:00Z', 'alphacena', 3e14, 0, 20);
+  const a = await page.evaluate(() => window.__solar.screenOf('alphacena'));
+  const b = await page.evaluate(() => window.__solar.screenOf('alphacenb'));
+  const pairPx = a && b ? Math.hypot(a.x - b.x, a.y - b.y) : -1;
+  console.log(`INFO  Alpha Centauri A-B separation on screen from 3e14 m: ${pairPx.toFixed(1)} px`);
+  check(a && b && a.inFront && b.inFront && pairPx > 4 && pairPx < 80, `Alpha Centauri A and B appear as a close pair (${pairPx.toFixed(1)} px apart)`);
+  await shot('phase4-alpha-centauri');
+  // Sirius A and B are separate points too (the schematic offset).
+  await view('2026-09-20T12:00:00Z', 'siriusa', 3e14, 0, 20);
+  const sa = await page.evaluate(() => window.__solar.screenOf('siriusa'));
+  const sb = await page.evaluate(() => window.__solar.screenOf('siriusb'));
+  const siriusPx = sa && sb ? Math.hypot(sa.x - sb.x, sa.y - sb.y) : -1;
+  check(siriusPx > 3 && siriusPx < 80, `Sirius A and B are separate points (${siriusPx.toFixed(1)} px apart)`);
+
+  // Star labels: none while close to a planet, present at system scale.
+  await view('2026-09-20T12:00:00Z', 'earth', 3e7, 0, 20);
+  check(!(await page.evaluate(() => window.__solar.labelsShown())).some((id) => STAR_IDS.includes(id)), 'no star labels close to Earth');
+
+  // Heliosphere: drawn from outside, gone from inside, and it adds pixels. First passing run: record the measured lit pixels
+  // (Deep space off -> on) here and set the threshold below half of that difference.
+  await view('2026-09-20T12:00:00Z', 'sun', 1.2e14, 0, 60);
+  await page.evaluate(() => window.__solar.setDeepSpace(true));
+  await settle();
+  check((await page.evaluate(() => window.__solar.deepSpaceState())).heliosphereVisible, 'the heliosphere is drawn at 800 AU');
+  const helioOn = await stats();
+  await shot('phase4-heliosphere');
+  await page.evaluate(() => window.__solar.setDeepSpace(false));
+  await settle();
+  const helioOff = await stats();
+  check(!(await page.evaluate(() => window.__solar.deepSpaceState())).heliosphereVisible, 'the Deep space toggle hides the heliosphere');
+  await page.evaluate(() => window.__solar.setDeepSpace(true));
+  // first passing run: lit pixels 7392 -> 51879 (+44487); threshold under half of that.
+  check(helioOn.lit - helioOff.lit >= 20000, `the heliosphere adds pixels (lit pixels ${helioOff.lit} -> ${helioOn.lit})`);
+  await view('2026-09-20T12:00:00Z', 'earth', 3e7, 0, 20);
+  await settle();
+  check(!(await page.evaluate(() => window.__solar.deepSpaceState())).heliosphereVisible, 'no heliosphere haze close to Earth (inside the bubble)');
+
+  // Oort cloud: all points present, drawn far out, hidden at planet scale, adds pixels.
+  const oort = await page.evaluate(() => window.__solar.deepSpaceState());
+  check(oort.oortPoints >= 10000, `the Oort cloud is populated (${oort.oortPoints} points)`);
+  await view('2026-09-20T12:00:00Z', 'sun', 1e16, 0, 60);
+  await settle();
+  check((await page.evaluate(() => window.__solar.deepSpaceState())).oortVisible, 'the Oort cloud is drawn at 1e16 m');
+  const oortOn = await stats();
+  await shot('phase4-oort');
+  await page.evaluate(() => window.__solar.setDeepSpace(false));
+  await settle();
+  const oortOff = await stats();
+  await page.evaluate(() => window.__solar.setDeepSpace(true));
+  // first passing run: lit pixels 115 -> 43955 (+43840); threshold under half of that.
+  check(oortOn.lit - oortOff.lit >= 20000, `the Oort cloud adds pixels (lit pixels ${oortOff.lit} -> ${oortOn.lit})`);
+  await view('2026-09-20T12:00:00Z', 'sun', 1e12, 0, 60);
+  await settle();
+  check(!(await page.evaluate(() => window.__solar.deepSpaceState())).oortVisible, 'the Oort cloud is hidden at the planetary view');
+
+  // Frame rate with everything loaded: 55 bodies, both belts, the full Oort cloud, the heliosphere.
+  await view('2026-09-20T12:00:00Z', 'sun', 3e15, 0, 60);
+  const fpsDeep = await page.evaluate(() => window.__solar.fps(3000));
+  console.log(`INFO  frame rate at 3e15 m with 55 bodies, both belts, the full Oort cloud and the heliosphere: ${fpsDeep.toFixed(1)} fps`);
+  check(fpsDeep >= 30, `frame rate with the full deep-space population meets the 30 fps target (${fpsDeep.toFixed(1)} fps)`);
+  await shot('phase4-footer');
 
   check(errors.length === 0, `no console errors${errors.length ? `: ${errors.join(' | ')}` : ''}`);
   await page.waitForTimeout(HOLD_MS);
