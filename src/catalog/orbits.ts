@@ -58,7 +58,7 @@ const PLUTO_POLE_SOURCE = 'NASA NSSDC Pluto Fact Sheet (nssdc.gsfc.nasa.gov/plan
  */
 const fittedM = (tableM: number, shiftDeg: number): string =>
   `mean anomaly calibrated to the Horizons state at JD 2451545.0 (fitted, not the JPL table value ${tableM.toFixed(1)}; shifted ${shiftDeg > 0 ? '+' : ''}${shiftDeg} deg because the published row is that far from the real J2000 position)`;
-const SBDB ='JPL Small-Body Database API (ssd-api.jpl.nasa.gov/sbdb.api, full-prec=true), osculating elements, J2000 ecliptic';
+const SBDB = 'JPL Small-Body Database API (ssd-api.jpl.nasa.gov/sbdb.api, full-prec=true), osculating elements, J2000 ecliptic';
 
 const TABLE: Partial<Record<BodyId, ElementSet>> = {
   // --- Mars (Laplace frame; ephemeris MAR099; ref. Brozović, Jacobson, Park (2025) AJ, 'Revised Ephemerides of the
@@ -70,21 +70,6 @@ const TABLE: Partial<Record<BodyId, ElementSet>> = {
   // the mean-longitude rate against the four Horizons epochs independently gives 0.318910 d (Phobos, 1.1 deg worst) and
   // 1.262440 d (Deimos, 0.2 deg worst), i.e. it agrees with NSSDC to the last figure, so this is a sourced fix, not a fit.
   // Worst error after: Phobos 7.1 deg (was 165.6), Deimos 3.3 deg (was 155.5).
-  // Phobos: re-verified this session (2x independent WebFetch re-reads of ssd.jpl.nasa.gov/sats/elem/, both
-  // matching these values exactly, including units -- P and Papsis/Pnode are not a units mixup). Kept unchanged
-  // after an extensive but unsuccessful attempt to improve on it: Phobos's node/apsidal precession periods
-  // (Pnode=2.3yr, Papsis=1.1yr) are so fast that this row's phase drifts far (55-166 deg by 1975/2026/2050) even
-  // though it matches Horizons to 0.06 deg exactly at J2000 (years=0, where the rates don't matter yet) -- the
-  // signature the task-7 brief itself flagged. A dense (81-point, 20-year) Horizons osculating-element re-fetch in
-  // Mars's own body-equator frame (this session) found the node/periapsis angles carry a genuine ~45-degree-
-  // amplitude *periodic* libration (not noise: the derived unwrap is smooth and monotonic, and cross-checked
-  // against a second, independent 4-year/25-point sample), which swamps any linear secular-rate fit at the
-  // 2-3-significant-figure precision this source publishes for Papsis/Pnode. A direct grid search against the 4
-  // Horizons reference states found sign/magnitude combinations reproducing those specific 4 points to ~1.1 deg,
-  // but a broader scan found 3 *other*, very different sign/magnitude combinations doing comparably well --
-  // i.e. overfitting 4 sparse points, not a physically meaningful correction (unlike Io/Europa below, verified
-  // against thousands of continuous astronomy-engine samples). No other allowed-domain source gave a more precise
-  // Papsis/Pnode. See task-7-fix1-report.md; PHASE_BOUND_DEG override recorded in moons.test.ts.
   phobos: {
     frame: { poleRaDeg: 317.7, poleDecDeg: 52.9 },
     elements: {

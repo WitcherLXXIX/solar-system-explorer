@@ -18,7 +18,7 @@ void main() {
 }
 `;
 
-export const CLOUD_FRAG =/* glsl */ `
+export const CLOUD_FRAG = /* glsl */ `
 #include <common>
 #include <logdepthbuf_pars_fragment>
 uniform sampler2D uClouds; // coverage in the red channel (linear)

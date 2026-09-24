@@ -96,7 +96,7 @@ void main() {
       vec3 H = normalize(uSunDir + V);
       float spec = pow(max(dot(N, H), 0.0), uShine);
       float fres = ${glslFloat(FRESNEL_F0)} + ${glslFloat(1 - FRESNEL_F0)} * pow(1.0 - max(dot(N, V), 0.0), ${glslFloat(FRESNEL_EXPONENT)}); // Schlick, mirrors earthMath.fresnel
-      lit += vec3(uGlint * spec * water * fres * (1.0 - cloudCover));
+      lit += vec3(uGlint * spec * water * fres * (1.0 - cloudCover) * shadow * bodyShadow);
     }
   }
   gl_FragColor = vec4(lit, 1.0);

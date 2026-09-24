@@ -70,7 +70,7 @@ describe('formatGravity', () => {
 describe('SKY_NOTE', () => {
   it('says the stars are real but shown in direction only, and gives the counts and the source', () => {
     expect(SKY_NOTE).toContain('direction');
-    expect(SKY_NOTE).toContain('not their real distance');
+    expect(SKY_NOTE).toContain('not at its real distance');
     expect(SKY_NOTE).toContain('48');
     expect(SKY_NOTE).toContain('5,022');
     expect(SKY_NOTE).toContain('HYG');

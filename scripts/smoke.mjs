@@ -359,7 +359,7 @@ try {
   // ---- phase 5: the night sky, body shadows, and the soft terminator ----
   // At 3e6 m Earth fills the whole frame and hides the sky, so the star A/B is done at 3e7 m where black space is in view.
   await view('2026-09-20T12:00:00Z', 'earth', 3e7, 150, 25);
-  const sky =await page.evaluate(() => window.__solar.skyState());
+  const sky = await page.evaluate(() => window.__solar.skyState());
   check(sky.points === 5070 && sky.visible, `the night sky is drawn at a close planetary view (${sky.points} stars)`);
   const skyOn = await stats();
   await shot('phase5-sky-close');
