@@ -126,7 +126,9 @@ export function generateBelt(spec: BeltSpec, gm: number = SUN_GM_M3_S2): BeltFie
         break;
       }
     }
-    const inc = Math.min(rayleigh(rand(), spec.inclinationSigmaDeg), spec.inclinationMaxDeg);
+    const inc = spec.isotropic
+      ? Math.acos(1 - 2 * rand()) / DEG
+      : Math.min(rayleigh(rand(), spec.inclinationSigmaDeg), spec.inclinationMaxDeg);
     const node = 360 * rand();
     const peri = 360 * rand();
     const m0 = 360 * rand();
