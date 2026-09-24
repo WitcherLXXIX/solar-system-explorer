@@ -1,7 +1,7 @@
 import { BELT_NOTE, DEEP_SPACE_NOTE } from './bodyText';
 import { el } from './dom';
 
-export type ToggleKey = 'orbits' | 'labels' | 'belts' | 'deep';
+export type ToggleKey = 'orbits' | 'labels' | 'belts' | 'deepSpace';
 
 export interface Toggles {
   readonly deepSpace: boolean;
@@ -13,7 +13,7 @@ export interface Toggles {
 }
 
 export function createToggles(root: HTMLElement): Toggles {
-  const state = { orbits: true, labels: true, belts: true, deep: true };
+  const state = { orbits: true, labels: true, belts: true, deepSpace: true };
   const boxes = new Map<ToggleKey, HTMLInputElement>();
   const add = (text: string, key: ToggleKey, title?: string): void => {
     const label = el('label', 'toggle');
@@ -31,12 +31,12 @@ export function createToggles(root: HTMLElement): Toggles {
   add('Orbits', 'orbits');
   add('Labels', 'labels');
   add('Belts', 'belts', BELT_NOTE);
-  add('Deep space', 'deep', DEEP_SPACE_NOTE);
+  add('Deep space', 'deepSpace', DEEP_SPACE_NOTE);
   return {
     get orbits() { return state.orbits; },
     get labels() { return state.labels; },
     get belts() { return state.belts; },
-    get deepSpace() { return state.deep; },
+    get deepSpace() { return state.deepSpace; },
     set(key, on) {
       state[key] = on;
       const box = boxes.get(key);

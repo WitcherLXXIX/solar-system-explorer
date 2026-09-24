@@ -8,7 +8,7 @@ describe('beltOpacity', () => {
     expect(beltOpacity(1e9)).toBe(0); // close to a planet: no scattering of far dots
     expect(beltOpacity(2e9)).toBe(0);
     expect(beltOpacity(2e10)).toBeCloseTo(0.8, 12);
-    expect(beltOpacity(1.2e13)).toBeCloseTo(0.8, 12); // the maximum camera distance
+    expect(beltOpacity(1.2e13)).toBeCloseTo(0.8, 12); // the old phase-3 maximum camera distance
   });
   it('is smooth and never decreases with altitude', () => {
     expect(beltOpacity(1.1e10)).toBeCloseTo(0.4, 12); // the midpoint of the ramp

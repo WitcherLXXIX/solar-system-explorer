@@ -100,8 +100,9 @@ export class BodyView {
     private readonly textures: TextureManager,
   ) {
     this.hasHiRes = data.maps.color?.hi !== undefined;
-    if (data.kind === 'nearstar' && data.spectralType === undefined) throw new Error(`${data.id} is a nearby star with no spectral type`);
-    this.starStyle = data.kind === 'nearstar' && data.spectralType !== undefined ? starSpriteStyle(data.spectralType) : null;
+    const spectralType = data.spectralType;
+    if (data.kind === 'nearstar' && spectralType === undefined) throw new Error(`${data.id} is a nearby star with no spectral type`);
+    this.starStyle = data.kind === 'nearstar' && spectralType !== undefined ? starSpriteStyle(spectralType) : null;
     this.surface = createSurfaceMaterial(data.color, isStarKind(data.kind));
     this.mesh = new THREE.Mesh(farGeometry, this.surface);
     this.mesh.scale.setScalar(data.radiusM);

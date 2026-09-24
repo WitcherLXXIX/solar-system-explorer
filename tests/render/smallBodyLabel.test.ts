@@ -8,6 +8,6 @@ describe('smallBodyLabelVisible', () => {
     expect(smallBodyLabelVisible(1e6)).toBe(true); // flying next to it
     expect(smallBodyLabelVisible(4.9 * AU_M)).toBe(true);
     expect(smallBodyLabelVisible(5.1 * AU_M)).toBe(false);
-    expect(smallBodyLabelVisible(1.2e13)).toBe(false); // the full-system view
+    expect(smallBodyLabelVisible(1.2e13)).toBe(false); // the old phase-3 full-system (Kuiper-scale) view
   });
 });

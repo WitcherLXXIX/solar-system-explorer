@@ -92,7 +92,7 @@ export class SolarScene {
   beltPointCounts(): { main: number; kuiper: number } {
     return { main: this.mainBelt.count, kuiper: this.kuiperBelt.count };
   }
-  /** True when both belts were drawn in the last frame. */
+  /** Number of points in the Oort cloud. */
   oortPointCount(): number {
     return this.oort.count;
   }
@@ -107,6 +107,7 @@ export class SolarScene {
     return this.heliosphere.shown;
   }
 
+  /** True when both belts were drawn in the last frame. */
   beltsVisible(): boolean {
     return this.mainBelt.points.visible && this.kuiperBelt.points.visible;
   }

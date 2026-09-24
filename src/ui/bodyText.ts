@@ -1,6 +1,7 @@
 import type { BodyKind } from '../catalog/bodies';
 import { formatHours } from '../format/format';
-import { HELIO_FADE_LOW_M } from '../render/heliosphereMath';
+import { OORT_A_MIN_AU, OORT_APOAPSIS_LIMIT_AU, OORT_CLOUD_SPEC } from '../ephemeris/oortField';
+import { HELIOPAUSE_AU, HELIO_FADE_LOW_M, TERMINATION_SHOCK_AU } from '../render/heliosphereMath';
 
 /** Shown for every nearby star. */
 export const STAR_NOTE = 'Position: real right ascension, declination and distance (Gaia DR3 and Hipparcos, via the Wikipedia list of nearest stars), held fixed because the star\'s own motion is invisible over 1700-2300. Radius: a schematic value for the spectral class. Drawn as a plain-colour sphere.';
@@ -9,7 +10,7 @@ export const STAR_NOTE = 'Position: real right ascension, declination and distan
 export const SIRIUS_B_NOTE = 'Its catalog position is identical to Sirius A\'s, so it is drawn a schematic 7.5 arcseconds (about 20 AU) north of it.';
 
 /** What the heliosphere and the Oort cloud are: shown as the Deep space toggle's tooltip and in the README. */
-export const DEEP_SPACE_NOTE = 'The heliosphere (a translucent shell at the termination shock, about 94 AU, and one at the heliopause, about 120 AU) and the Oort cloud (15,000 statistically placed points between 2,000 and 100,000 AU) are schematic: nothing solid is there, the real bubble is not a sphere, and no individual Oort object has ever been observed. The twelve nearby stars are real.';
+export const DEEP_SPACE_NOTE = `The heliosphere (a translucent shell at the termination shock, about ${TERMINATION_SHOCK_AU} AU, and one at the heliopause, about ${HELIOPAUSE_AU} AU) and the Oort cloud (${OORT_CLOUD_SPEC.count.toLocaleString('en-US')} statistically placed points, mostly between ${OORT_A_MIN_AU.toLocaleString('en-US')} and ${OORT_APOAPSIS_LIMIT_AU.toLocaleString('en-US')} AU) are schematic: nothing solid is there, the real bubble is not a sphere, and no individual Oort object has ever been observed. The twelve nearby stars are real.`;
 
 /** The line under the toggles while the schematic deep-space layers can be seen: empty when they cannot (toggle off, or too close to the Sun to see the shells). */
 export function deepSpaceCaption(altitudeM: number, on: boolean): string {

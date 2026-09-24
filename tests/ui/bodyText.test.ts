@@ -8,6 +8,10 @@ describe('deep-space notes', () => {
     expect(DEEP_SPACE_NOTE).toMatch(/heliopause/);
     expect(DEEP_SPACE_NOTE).toMatch(/Oort/);
     expect(DEEP_SPACE_NOTE).toMatch(/nothing solid/);
+    expect(DEEP_SPACE_NOTE).toContain('94 AU');
+    expect(DEEP_SPACE_NOTE).toContain('120 AU');
+    expect(DEEP_SPACE_NOTE).toContain('15,000');
+    expect(DEEP_SPACE_NOTE).toContain('mostly between 2,000 and 100,000 AU');
   });
   it("says a star's position is real and fixed but its radius is schematic", () => {
     expect(STAR_NOTE).toMatch(/Gaia/);
