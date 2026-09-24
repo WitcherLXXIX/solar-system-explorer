@@ -1,6 +1,6 @@
 # Solar System Explorer
 
-A browser-based 3D solar system you can zoom through continuously, from just above a planet's surface out past Neptune and on to the nearest stars (about 10.6 light-years), using real sizes, real distances and real planetary positions. Phases 1, 2a, 2b, 3 and 4 of a larger project (see `docs/superpowers/specs/`).
+A browser-based 3D solar system you can zoom through continuously, from just above a planet's surface out past Neptune and on to the nearest stars (about 10.6 light-years), using real sizes, real distances and real planetary positions. Phases 1, 2a, 2b, 3, 4 and 5 (a fidelity pass and a real night sky) of a larger project (see `docs/superpowers/specs/`).
 
 Planet fidelity in this phase: high-resolution surface maps (loaded only for nearby bodies), atmospheres, Saturn's rings with ring and planet shadows and faint rings for the other three giants, and Earth's night lights, cloud layer and ocean glint. You can descend to 0.2% of a planet's radius above its surface (about 13 km at Earth). Below about 3,800 km the 8K map is being magnified (it is about 4.9 km per texel at Earth's equator); at 1,000 km one texel already spans about 4 screen pixels; real terrain detail needs streamed tiles, which this app does not have.
 
@@ -31,7 +31,7 @@ Planet fidelity in this phase: high-resolution surface maps (loaded only for nea
 
 **Maps.** Real global maps are used only where a source page verified projection, longitude convention, coverage and licence (`docs/texture-sources.md` has the full research table, including every rejection). Every other body is drawn in a plain colour with Lambert shading and the info panel says "No global map available: plain colour shown." Solar System Scope's Ceres, Eris, Haumea and Makemake maps are artist-drawn ("fictional") and deliberately not used.
 
-**Known limits.** No eclipses or shadows on moons, no libration, no irregular or small moons (Nereid, Hyperion and others), no mutual perturbations beyond mean-element precession. At the fastest time speeds orbits alias: Phobos circles Mars in 7.6 hours (about 1,150 times a year), so at one year per second it strobes; that is expected, not a bug.
+**Known limits.** Body-on-body shadows exist since phase 5 (see "Phase 5" below) but not cloud, ring or atmosphere shadows on moons; no libration, no irregular or small moons (Nereid, Hyperion and others), no mutual perturbations beyond mean-element precession. At the fastest time speeds orbits alias: Phobos circles Mars in 7.6 hours (about 1,150 times a year), so at one year per second it strobes; that is expected, not a bug.
 
 ## Phase 3: small bodies
 
@@ -69,6 +69,22 @@ Added: the camera limit is raised to 1e17 m and the far plane to 1e18 m; twelve 
 
 **Deferred.** Stars beyond 11.4 ly, stellar physics, a galactic backdrop, time-accurate proper motion, an asymmetric heliosphere, individually named Oort objects, star glow.
 
+## Phase 5: fidelity pass and night sky
+
+**The night sky.** The background is now 5,070 real stars from the HYG database v4.4 (`docs/data/*.csv`, licence CC BY-SA 4.0, credited under Credits below): 48 notable stars with labels and 5,022 naked-eye stars without. It has its own "Night sky" toggle, separate from "Deep space". The stars are drawn in their real direction (RA and Dec) but NOT at their real distance: they sit on a fixed sky sphere just inside the far plane, so they do not move or parallax when the camera moves, and the camera cannot reach them. Colours come from each star's B-V colour index; dot size and opacity are a function of apparent magnitude chosen for appearance, not photometry. The notable-star labels fade in with altitude (from about 1e9 m to 1e11 m) and are absent close to a planet. Three of the 48 (Sirius, Rigil Kentaurus and Toliman) have no label of their own because phase 4 already labels Sirius A and Alpha Centauri A and B, which are the same stars and can be flown to; their dots are still drawn. The nearby-stars group from phase 4 is unchanged.
+
+**Soft terminator.** The hard Lambert edge at every planet's day/night line is replaced by a soft-Lambert term (a quadratic ramp over N.L = -0.1 to +0.1: continuous with continuous slope, never darker than plain Lambert, at most 0.025 brighter, at the terminator). It is a cosmetic easing, not derived from physics (a real terminator is soft because the Sun is a disc and because of atmospheres, which are drawn separately).
+
+**Body shadows.** The surface shader darkens a point when a parent, sibling or child body lies between it and the Sun: a moon on its planet, a planet on its moon, a moon on another moon, with up to 4 occluders per shaded body, using the Sun's real angular size (so umbra and penumbra come out of the geometry). Not covered: cloud shells, rings, atmospheres and small bodies neither cast nor receive these shadows. Verified against two real events: the 2026-03-03 total lunar eclipse (`tests/ephemeris/bodyShadowReal.test.ts`; reference maths in `tests/render/bodyShadowMath.test.ts`) and Io's shadow on Jupiter on 2026-09-25 00:59 UTC. The smoke test checks both in the real render: the Moon's mean centre brightness is 12.3 in eclipse against 149.1 six days later and 148.6 with effects off; at Jupiter, 1.2e8 m out, Io's shadow lowers the centre patch's mean from 204.11 (effects off) to 193.00 (the shadow is a small black dot in the screenshot).
+
+**Two findings recorded above and below.** The flat look at the minimum altitude over Earth is not the cloud shell; see "Minimum-altitude view" below. The moon-orbit investigation is the phase-5 table under "Moons and dwarf planets" above (Mimas remains 50 degrees off).
+
+**Measured** (`npm run smoke`, visible Chromium window, 2026-09-24, all checks passed with no console errors): 55.3 fps at 3e12 m with the night sky, shadows, 55 bodies and both belts (the earlier 54 to 56 fps at other views is unchanged by the sky). The stars add about 600 lit pixels at 3e7 m over Earth (a 1,280 x 720 frame; at 3e6 m Earth fills the frame and hides them, so that check is done from farther out).
+
+**Hooks** for tests, new this phase: `window.__solar.setNightSky(on)`, `skyState()` (point count and whether the layer was drawn), `skyLabelsShown()` (the visible notable-star names) and `meanLuma()` (mean brightness of the centre 64 x 64 patch), alongside the existing ones.
+
+**Deferred.** Star proper motion and twinkling, a galactic or Milky Way backdrop, constellation lines, clicking a sky star, stars fainter than magnitude 6, shadows cast by rings and clouds.
+
 ## Minimum-altitude view (phase 5 finding)
 
 The flat, washed-out look at Earth's 12.7 km camera floor is not caused by the cloud shell. Shots at 12.7 km over desert and ocean (`--view earth,12740,0,25` and `--view earth,12740,60,25`) are pixel-for-pixel the same with the cloud shell hidden as with it drawn. With effects off the view is still a single flat colour: the 8K map has about 4.9 km per texel, so at 12.7 km a texel fills a large part of the screen and the picture is a magnified, featureless patch. That is the map's resolution, not a bug. The atmosphere adds a slight pale haze and a soft glow on top (compare effects on with effects off), but it does not remove any detail that the map has. (Note that `--view`'s pitch is the camera's latitude, so `-89` looks at the polar night side and is nearly black in September.) Real detail here would need a higher-resolution map or a procedural detail layer.
@@ -103,4 +119,5 @@ All positions are float64 metres in the heliocentric ecliptic J2000 frame. Every
 - Moon and dwarf-planet orbits: JPL Planetary Satellite Mean Elements (`ssd.jpl.nasa.gov/sats/elem`) and the JPL Small-Body Database; accuracy checked against JPL Horizons.
 - Moon and dwarf-planet rotation: the IAU Working Group on Cartographic Coordinates and Rotational Elements (2015 report, Archinal et al. 2018); none of its constants are currently used, because `ROTATIONS` in `src/catalog/orbits.ts` is empty (see Orientation above).
 - Moon and dwarf-planet maps: the Moon from Solar System Scope (CC BY 4.0); every other map credited here as it is added: Ceres from NASA/JPL-Caltech/UCLA/MPS/DLR/IDA (Dawn Framing Camera global mosaic, 400 m/pixel, public domain, "please cite authors") (bodies with no map are drawn in a plain colour).
+- Night-sky stars: the HYG database v4.4 (astronexus.com/projects/hyg), CC BY-SA 4.0, compiled from Hipparcos, Yale Bright Star and Gliese catalogues; bundled subset in `docs/data/`.
 - Nearby stars: Wikipedia, "List of nearest stars" (https://en.wikipedia.org/wiki/List_of_nearest_stars), itself citing Gaia DR3 and Hipparcos, fetched 2026-09-23.

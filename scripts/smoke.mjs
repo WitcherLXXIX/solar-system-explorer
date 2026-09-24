@@ -356,6 +356,59 @@ try {
   check(fpsDeep >= 30, `frame rate with the full deep-space population meets the 30 fps target (${fpsDeep.toFixed(1)} fps)`);
   await shot('phase4-footer');
 
+  // ---- phase 5: the night sky, body shadows, and the soft terminator ----
+  // At 3e6 m Earth fills the whole frame and hides the sky, so the star A/B is done at 3e7 m where black space is in view.
+  await view('2026-09-20T12:00:00Z', 'earth', 3e7, 150, 25);
+  const sky =await page.evaluate(() => window.__solar.skyState());
+  check(sky.points === 5070 && sky.visible, `the night sky is drawn at a close planetary view (${sky.points} stars)`);
+  const skyOn = await stats();
+  await shot('phase5-sky-close');
+  await page.evaluate(() => window.__solar.setNightSky(false));
+  await settle();
+  const skyOff = await stats();
+  check(!(await page.evaluate(() => window.__solar.skyState())).visible, 'the Night sky toggle hides the stars');
+  check(skyOn.lit > skyOff.lit + 200, `the stars add pixels (lit pixels ${skyOff.lit} -> ${skyOn.lit})`);
+  await page.evaluate(() => window.__solar.setNightSky(true));
+  await view('2026-09-20T12:00:00Z', 'sun', 3e13, 0, 60);
+  check((await page.evaluate(() => window.__solar.skyState())).visible, 'the night sky is drawn at the deep-space view');
+  const skyLabels = await page.evaluate(() => window.__solar.skyLabelsShown());
+  check(skyLabels.length >= 1, `notable-star labels show at the deep-space view (${skyLabels.slice(0, 6).join(', ')})`);
+  await shot('phase5-sky-deep');
+  await page.evaluate(() => window.__solar.setNightSky(false));
+  await settle();
+  check((await page.evaluate(() => window.__solar.skyLabelsShown())).length === 0, 'the Night sky toggle also hides the star labels');
+  await page.evaluate(() => window.__solar.setNightSky(true));
+  await view('2026-09-20T12:00:00Z', 'earth', 3e6, 150, 25);
+  check((await page.evaluate(() => window.__solar.skyLabelsShown())).length === 0, 'no star labels at a close planetary view');
+
+  // Body shadows: the real total lunar eclipse of 2026-03-03 darkens the Moon; six days later it is lit.
+  await view('2026-03-03T11:33:40Z', 'moon', 3e6, 0, 0);
+  const eclipsed = await page.evaluate(() => window.__solar.meanLuma());
+  await shot('phase5-lunar-eclipse');
+  await view('2026-03-09T11:33:40Z', 'moon', 3e6, 0, 0);
+  const moonLit = await page.evaluate(() => window.__solar.meanLuma());
+  check(moonLit > 40 && eclipsed < 0.35 * moonLit, `the Moon is dark in Earth's shadow (mean brightness ${eclipsed.toFixed(1)} against ${moonLit.toFixed(1)} six days later)`);
+  await page.evaluate(() => window.__solar.setEffects(false));
+  await view('2026-03-03T11:33:40Z', 'moon', 3e6, 0, 0);
+  const noEffects = await page.evaluate(() => window.__solar.meanLuma());
+  check(noEffects > 2 * eclipsed, `with effects off the eclipse shadow is gone (${noEffects.toFixed(1)})`);
+  await page.evaluate(() => window.__solar.setEffects(true));
+  // Io's shadow on Jupiter (2026-09-25T00:59Z, the shadow axis passes 0.04 Jupiter radii from the disc centre).
+  await view('2026-09-25T00:59:00Z', 'jupiter', 1.2e8, 0, 0);
+  await shot('phase5-io-shadow');
+  const withShadow = await page.evaluate(() => window.__solar.meanLuma());
+  await page.evaluate(() => window.__solar.setEffects(false));
+  await settle();
+  const withoutShadow = await page.evaluate(() => window.__solar.meanLuma());
+  check(withShadow < withoutShadow, `Io's shadow darkens the centre of Jupiter's disc (mean ${withShadow.toFixed(2)} against ${withoutShadow.toFixed(2)} with effects off)`);
+  await page.evaluate(() => window.__solar.setEffects(true));
+
+  // Frame rate with everything on: night sky, shadows, 55 bodies, belts.
+  await view('2026-09-20T12:00:00Z', 'sun', 3e12, 0, 60);
+  const fpsPhase5 = await page.evaluate(() => window.__solar.fps(3000));
+  console.log(`INFO  frame rate at 3e12 m with the night sky, shadows, 55 bodies and both belts: ${fpsPhase5.toFixed(1)} fps`);
+  check(fpsPhase5 >= 30, `frame rate with the night sky meets the 30 fps target (${fpsPhase5.toFixed(1)} fps)`);
+
   check(errors.length === 0, `no console errors${errors.length ? `: ${errors.join(' | ')}` : ''}`);
   await page.waitForTimeout(HOLD_MS);
 } catch (error) {
