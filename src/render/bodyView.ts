@@ -5,6 +5,7 @@ import type { Vec3 } from '../math';
 import { AtmosphereEffect } from './atmosphere';
 import { SPRITE_THRESHOLD_PX, apparentDiameterPx, toRenderSpace } from './cameraRelative';
 import { CloudEffect } from './clouds';
+import { CometTailEffect } from './cometTail';
 import { getDotTexture } from './dotTexture';
 import { pickMeshDetail, type MeshDetail } from './lod';
 import { orientationToThree } from './orientation';
@@ -45,6 +46,8 @@ export interface BodyRenderState {
   hiRes: boolean;
   /** The camera's near plane this frame, in metres. */
   nearM: number;
+  /** Distance from the body to the Sun this frame, metres (from float64-differenced camera-relative positions). */
+  sunDistanceM: number;
 }
 
 export interface BodyEffect {
@@ -121,11 +124,17 @@ export class BodyView {
     if (this.data.atmosphere) effects.push(new AtmosphereEffect(this.data));
     if (this.data.rings) effects.push(new RingEffect(this.data, this.surface, this.textures));
     if (this.data.maps.clouds && this.data.cloudShellFraction !== undefined) effects.push(new CloudEffect(this.data, this.textures));
+    if (this.data.kind === 'comet') effects.push(new CometTailEffect(this.data));
     return effects;
   }
 
   get isHiRes(): boolean {
     return this.hiRes;
+  }
+
+  /** True when this body's comet tail was drawn in the last update. */
+  get tailVisible(): boolean {
+    return this.effects.some((effect) => effect instanceof CometTailEffect && effect.shown);
   }
 
   /** Hides the body's point sprite for this frame (call after `update`); the scene uses it when a moon's dot would sit on its parent's. */
@@ -172,6 +181,7 @@ export class BodyView {
     // Directions are formed from float64 differences, then held as small unit vectors.
     const radius = this.data.radiusM;
     this.sunDir.set(ctx.sunRel[0] - rel[0], ctx.sunRel[1] - rel[1], ctx.sunRel[2] - rel[2]);
+    const sunDistanceM = this.sunDir.length();
     if (this.sunDir.lengthSq() < 1) this.sunDir.set(0, 1, 0); // the Sun itself
     else this.sunDir.normalize();
     this.camRelBody.set(-rel[0] / radius, -rel[1] / radius, -rel[2] / radius);
@@ -182,7 +192,7 @@ export class BodyView {
     const state: BodyRenderState = {
       data: this.data, rel, quaternion: this.mesh.quaternion, sunDir: this.sunDir, camRelBody: this.camRelBody,
       sunLocal: this.sunLocal, camLocal: this.camLocal, screenDiameterPx, asSphere,
-      effectsEnabled: ctx.effectsEnabled, hiRes: ctx.hiRes, nearM: ctx.nearM,
+      effectsEnabled: ctx.effectsEnabled, hiRes: ctx.hiRes, nearM: ctx.nearM, sunDistanceM,
     };
     if (asSphere) this.updateSurface(state);
     for (const effect of this.effects) effect.update(state);

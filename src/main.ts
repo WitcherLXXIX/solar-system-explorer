@@ -152,6 +152,7 @@ declare global {
       beltCounts(): { main: number; kuiper: number };
       setBelts(on: boolean): void;
       beltsVisible(): boolean;
+      tailsVisible(): string[];
     };
   }
 }
@@ -182,6 +183,7 @@ window.__solar = {
   beltCounts: () => scene.beltPointCounts(),
   setBelts: (on) => toggles.set('belts', on),
   beltsVisible: () => scene.beltsVisible(),
+  tailsVisible: () => scene.cometTailsVisible(),
   fps: async (ms) => {
     const startFrames = frames;
     const startTime = performance.now();

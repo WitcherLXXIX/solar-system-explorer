@@ -92,6 +92,10 @@ export class SolarScene {
   beltsVisible(): boolean {
     return this.mainBelt.points.visible && this.kuiperBelt.points.visible;
   }
+  /** Ids of the comets whose tail was drawn in the last frame. */
+  cometTailsVisible(): BodyId[] {
+    return BODIES.filter((body) => this.views.get(body.id)!.tailVisible).map((body) => body.id);
+  }
   /** Number of textures alive on the GPU. */
   textureCount(): number {
     return this.renderer.info.memory.textures;
