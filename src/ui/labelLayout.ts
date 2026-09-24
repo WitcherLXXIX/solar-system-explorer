@@ -1,15 +1,15 @@
 import type { BodyId } from '../catalog/bodies';
 
-export interface LabelCandidate {
-  id: BodyId;
+export interface LabelCandidate<K extends string = BodyId> {
+  id: K;
   x: number;
   y: number;
   priority: number;
 }
 
 /** Greedy declutter: highest priority first, skip any label closer than `minSepPx` to one already placed. */
-export function layoutLabels(items: readonly LabelCandidate[], minSepPx: number): Set<BodyId> {
-  const placed: LabelCandidate[] = [];
+export function layoutLabels<K extends string>(items: readonly LabelCandidate<K>[], minSepPx: number): Set<K> {
+  const placed: LabelCandidate<K>[] = [];
   for (const item of [...items].sort((a, b) => b.priority - a.priority)) {
     if (placed.every((p) => Math.hypot(p.x - item.x, p.y - item.y) >= minSepPx)) placed.push(item);
   }

@@ -17,6 +17,10 @@ import { createScaleReadout } from './ui/scaleReadout';
 import { createTimeBar } from './ui/timeBar';
 import { isLabelOccluded, type ScreenBody } from './ui/labelLayout';
 import { createToggles } from './ui/toggles';
+import { NOTABLE_STARS } from './catalog/skyStars';
+import { NOTABLE_SKY_POSITIONS } from './render/skyStarPoints';
+import { SKY_LABEL_SUPPRESSED, skyLabelOpacity } from './render/skyStarMath';
+import { createSkyStarLabels } from './ui/skyStarLabels';
 import { deepSpaceCaption } from './ui/bodyText';
 
 const canvas = document.querySelector<HTMLCanvasElement>('#scene')!;
@@ -55,6 +59,7 @@ const readout = createScaleReadout(element('scale'));
 const infoPanel = createInfoPanel(element('info'));
 const captionEl = element('caption');
 const labels = createLabels(element('labels'));
+const skyLabels = createSkyStarLabels(element('labels'), NOTABLE_STARS.map((s) => s.name));
 const bodyList = createBodyList(element('bodies'), (id) => camera.flyTo(id));
 let shownBody: BodyId | null = null;
 const FOCUSED_LABEL_HIDE_PX = 24;
@@ -145,6 +150,17 @@ function loop(now: number): void {
     }),
     toggles.labels,
   );
+  // Notable-star labels: real directions projected to the screen; the Night sky toggle and the Labels toggle both gate them, and the
+  // three that duplicate a phase-4 nearby star (Sirius, Alpha Centauri A and B) are left to that star's own label.
+  const skyOpacity = toggles.nightSky ? skyLabelOpacity(pose.altitudeM) : 0;
+  skyLabels.update(
+    NOTABLE_STARS.flatMap((star, index) => {
+      if (SKY_LABEL_SUPPRESSED.has(star.name)) return [];
+      const screen = scene.projectToScreen(NOTABLE_SKY_POSITIONS[index]!);
+      return [{ index, x: screen.x, y: screen.y, inFront: screen.inFront, priority: -star.mag }];
+    }),
+    skyOpacity, toggles.labels, { width: window.innerWidth, height: window.innerHeight },
+  );
   frames++;
   requestAnimationFrame(loop);
 }
@@ -165,6 +181,7 @@ declare global {
       setEffects(on: boolean): void;
       hiResBodies(): string[];
       labelsShown(): string[];
+      skyLabelsShown(): string[];
       textureCount(): number;
       hiTextureCount(): number;
       pixelStats(): { lit: number; warm: number; blue: number };
@@ -204,6 +221,7 @@ window.__solar = {
   setEffects: (on) => scene.setEffectsEnabled(on),
   hiResBodies: () => scene.hiResBodies(),
   labelsShown: () => labels.shown(),
+  skyLabelsShown: () => skyLabels.shown(),
   textureCount: () => scene.textureCount(),
   hiTextureCount: () => scene.hiTextureCount(),
   pixelStats: () => scene.pixelStats(),

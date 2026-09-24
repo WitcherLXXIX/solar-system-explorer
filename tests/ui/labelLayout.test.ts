@@ -20,6 +20,10 @@ describe('layoutLabels', () => {
   it('is empty for no input', () => {
     expect(layoutLabels([], 20).size).toBe(0);
   });
+  it('layoutLabels works with any string id, not only body ids', () => {
+    const placed = layoutLabels([{ id: 'Vega', x: 10, y: 10, priority: 2 }, { id: 'Deneb', x: 12, y: 11, priority: 1 }], 22);
+    expect([...placed]).toEqual(['Vega']);
+  });
 });
 
 describe('isLabelOccluded', () => {
