@@ -59,3 +59,8 @@ export function visibleRows<Id extends string>(tree: readonly TreeNode<Id>[], ex
 export function splitSmallBodies<T extends { kind: TreeKind }>(bodies: readonly T[]): { main: T[]; small: T[] } {
   return { main: bodies.filter((b) => !isSmallBodyKind(b.kind)), small: bodies.filter((b) => isSmallBodyKind(b.kind)) };
 }
+
+/** Splits off the twelve nearby stars, which the body list shows in their own group. Order is kept. */
+export function splitNearbyStars<T extends { kind: TreeKind }>(bodies: readonly T[]): { main: T[]; stars: T[] } {
+  return { main: bodies.filter((b) => b.kind !== 'nearstar'), stars: bodies.filter((b) => b.kind === 'nearstar') };
+}

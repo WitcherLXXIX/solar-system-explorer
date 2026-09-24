@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildBodyTree, visibleRows, type TreeInput } from '../../src/ui/bodyTree';
+import { buildBodyTree, splitNearbyStars, visibleRows, type TreeInput } from '../../src/ui/bodyTree';
 
 type Id = 'sun' | 'earth' | 'moon' | 'mars' | 'phobos' | 'deimos' | 'pluto' | 'charon' | 'ceres';
 const BODIES: TreeInput<Id>[] = [
@@ -54,5 +54,17 @@ describe('visibleRows', () => {
   });
   it('ignores expansion of a body with no children', () => {
     expect(visibleRows(tree, new Set<Id>(['ceres'])).map((r) => r.id)).toEqual(['sun', 'earth', 'mars', 'pluto', 'ceres']);
+  });
+});
+
+describe('splitNearbyStars', () => {
+  it('splits the nearby stars off in their own group and keeps everything else, in order', () => {
+    const bodies = [
+      { id: 'sun', kind: 'star' as const }, { id: 'earth', kind: 'planet' as const },
+      { id: 'proxima', kind: 'nearstar' as const }, { id: 'moon', kind: 'moon' as const }, { id: 'siriusa', kind: 'nearstar' as const },
+    ];
+    const { main, stars } = splitNearbyStars(bodies);
+    expect(main.map((b) => b.id)).toEqual(['sun', 'earth', 'moon']);
+    expect(stars.map((b) => b.id)).toEqual(['proxima', 'siriusa']);
   });
 });

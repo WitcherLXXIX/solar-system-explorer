@@ -4,7 +4,7 @@ import { SimClock } from './clock/clock';
 import { frameDelta } from './clock/frameDelta';
 import { BODY_IDS, getBody, isSmallBodyKind, type BodyId } from './catalog/bodies';
 import { computeFrame, type Frame } from './ephemeris/frame';
-import { labelPriority, moonLabelVisible, smallBodyLabelVisible } from './render/orbitFade';
+import { labelPriority, moonLabelVisible, smallBodyLabelVisible, starLabelVisible } from './render/orbitFade';
 import { SolarScene, type FrameInput, type RenderInfo } from './render/solarScene';
 import { isWebGL2Available } from './render/webgl';
 import { length, sub } from './math';
@@ -17,6 +17,7 @@ import { createScaleReadout } from './ui/scaleReadout';
 import { createTimeBar } from './ui/timeBar';
 import { isLabelOccluded, type ScreenBody } from './ui/labelLayout';
 import { createToggles } from './ui/toggles';
+import { deepSpaceCaption } from './ui/bodyText';
 
 const canvas = document.querySelector<HTMLCanvasElement>('#scene')!;
 const element = (id: string): HTMLElement => document.querySelector<HTMLElement>(`#${id}`)!;
@@ -52,6 +53,7 @@ const toggles = createToggles(element('toggles'));
 const timeBar = createTimeBar(element('timebar'), clock);
 const readout = createScaleReadout(element('scale'));
 const infoPanel = createInfoPanel(element('info'));
+const captionEl = element('caption');
 const labels = createLabels(element('labels'));
 const bodyList = createBodyList(element('bodies'), (id) => camera.flyTo(id));
 let shownBody: BodyId | null = null;
@@ -70,6 +72,11 @@ function smallBodyLabelAllowed(id: BodyId, info: Map<BodyId, RenderInfo>): boole
   return !isSmallBodyKind(getBody(id).kind) || smallBodyLabelVisible(info.get(id)!.distanceM);
 }
 
+/** A nearby star's label shows only from planet-system altitude up, or when that star is the focus, so close-up views are not littered with names. */
+function starLabelAllowed(id: BodyId, altitudeM: number, displayed: BodyId): boolean {
+  return getBody(id).kind !== 'nearstar' || starLabelVisible(altitudeM, id === displayed);
+}
+
 function resize(): void {
   scene.resize(window.innerWidth, window.innerHeight);
 }
@@ -84,6 +91,8 @@ attachInput(canvas, {
 let frames = 0;
 let lastInput: FrameInput | null = null;
 let last: number | null = null;
+let screens = new Map<BodyId, { x: number; y: number; inFront: boolean }>();
+let starsShown: BodyId[] = [];
 
 function loop(now: number): void {
   const dt = frameDelta(now, last);
@@ -93,7 +102,7 @@ function loop(now: number): void {
   const pose = camera.update(dt);
   lastInput = {
     frame, cameraPos: pose.position, focusPoint: pose.focusPoint,
-    altitudeM: pose.altitudeM, date: clock.date, showOrbits: toggles.orbits, showBelts: toggles.belts, showDeepSpace: true,
+    altitudeM: pose.altitudeM, date: clock.date, showOrbits: toggles.orbits, showBelts: toggles.belts, showDeepSpace: toggles.deepSpace,
   };
   const info = scene.render(lastInput);
 
@@ -108,11 +117,16 @@ function loop(now: number): void {
   infoPanel.update(sunDistanceM);
   readout.update({ pose, fovYRad: scene.fovYRad, viewportHeightPx: scene.viewportHeight, sunDistanceM });
   timeBar.update();
+  captionEl.textContent = deepSpaceCaption(pose.altitudeM, toggles.deepSpace);
   const onScreen: ScreenBody[] = BODY_IDS.map((id) => {
     const r = info.get(id)!;
     const screen = scene.projectToScreen(r.rel);
     return { id, x: screen.x, y: screen.y, inFront: screen.inFront, distanceM: r.distanceM, screenDiameterPx: r.screenDiameterPx };
   });
+  screens = new Map(onScreen.map((b) => [b.id, { x: b.x, y: b.y, inFront: b.inFront }]));
+  starsShown = onScreen
+    .filter((b) => getBody(b.id).kind === 'nearstar' && b.inFront && b.x >= 0 && b.x <= window.innerWidth && b.y >= 0 && b.y <= window.innerHeight)
+    .map((b) => b.id);
   labels.update(
     onScreen.map((b) => {
       // The label offset is about 10 px, so once the focused body's disc is wider than that its label would sit on
@@ -124,7 +138,7 @@ function loop(now: number): void {
         priority: labelPriority(getBody(b.id).kind, getBody(b.id).radiusM),
         // Hide behind the camera, off-screen, occluded, when the body itself already fills much of the view,
         // or (moons) when the camera is far from the parent.
-        visible: b.inFront && !coversOwnLabel && moonLabelAllowed(b.id, info) && smallBodyLabelAllowed(b.id, info) && !isLabelOccluded(b, onScreen) &&
+        visible: b.inFront && !coversOwnLabel && moonLabelAllowed(b.id, info) && smallBodyLabelAllowed(b.id, info) && starLabelAllowed(b.id, pose.altitudeM, displayed) && !isLabelOccluded(b, onScreen) &&
           b.screenDiameterPx < scene.viewportHeight * 0.5 &&
           b.x > -50 && b.x < window.innerWidth + 50 && b.y > -20 && b.y < window.innerHeight + 20,
       };
@@ -158,6 +172,10 @@ declare global {
       setBelts(on: boolean): void;
       beltsVisible(): boolean;
       tailsVisible(): string[];
+      setDeepSpace(on: boolean): void;
+      deepSpaceState(): { oortPoints: number; oortVisible: boolean; heliosphereVisible: boolean };
+      starsInView(): BodyId[];
+      screenOf(id: BodyId): { x: number; y: number; inFront: boolean } | null;
     };
   }
 }
@@ -189,6 +207,10 @@ window.__solar = {
   setBelts: (on) => toggles.set('belts', on),
   beltsVisible: () => scene.beltsVisible(),
   tailsVisible: () => scene.cometTailsVisible(),
+  setDeepSpace: (on) => toggles.set('deep', on),
+  deepSpaceState: () => ({ oortPoints: scene.oortPointCount(), oortVisible: scene.oortVisible(), heliosphereVisible: scene.heliosphereVisible() }),
+  starsInView: () => starsShown,
+  screenOf: (id) => screens.get(id) ?? null,
   fps: async (ms) => {
     const startFrames = frames;
     const startTime = performance.now();

@@ -3,7 +3,7 @@ import { orbitalPeriodDays } from '../ephemeris/ephemeris';
 import {
   formatDistance, formatMass, formatPeriodDays, formatRadius, formatTemp,
 } from '../format/format';
-import { C67P_NOTE, SMALL_BODY_NOTE, TAIL_NOTE, dayLengthText, formatGravity, kindLabel, mapNote } from './bodyText';
+import { C67P_NOTE, SIRIUS_B_NOTE, SMALL_BODY_NOTE, STAR_NOTE, TAIL_NOTE, dayLengthText, formatGravity, kindLabel, mapNote } from './bodyText';
 import { el } from './dom';
 
 export function createInfoPanel(root: HTMLElement): { setBody(id: BodyId): void; update(sunDistanceM: number | null): void } {
@@ -27,14 +27,26 @@ export function createInfoPanel(root: HTMLElement): { setBody(id: BodyId): void;
   return {
     setBody(id) {
       const body = getBody(id);
-      const period = orbitalPeriodDays(id);
       const parentName = body.parent !== null && body.parent !== 'sun' ? getBody(body.parent).name : null;
+      if (body.kind === 'nearstar') {
+        heading.textContent = body.name;
+        kind.textContent = kindLabel(body.kind, null, body.spectralType);
+        list.replaceChildren();
+        addRow('Spectral type', body.spectralType ?? '—', 'From the sourced table');
+        addRow('Radius', formatRadius(body.radiusM), 'Schematic: set by the spectral class, not measured for this star');
+        sunDistanceValue = addRow('Distance from Sun', '');
+        foot.textContent = `Source: ${body.source}`;
+        mapFoot.textContent = '';
+        noteFoot.textContent = body.id === 'siriusb' ? `${STAR_NOTE} ${SIRIUS_B_NOTE}` : STAR_NOTE;
+        return;
+      }
+      const period = orbitalPeriodDays(id);
       const periodNote =
         body.kind === 'moon' ? `Sidereal period around ${parentName ?? 'its parent'}`
         : body.kind === 'dwarf' || isSmallBodyKind(body.kind) ? 'Sidereal period around the Sun'
         : 'From astronomy-engine (VSOP87)';
       heading.textContent = body.name;
-      kind.textContent = kindLabel(body.kind, parentName);
+      kind.textContent = kindLabel(body.kind, parentName, body.spectralType);
       list.replaceChildren();
       addRow('Radius', formatRadius(body.radiusM), isSmallBodyKind(body.kind) ? 'Half the published diameter (spherical approximation)' : 'Volumetric mean radius');
       addRow('Mass', body.massKg === null ? '—' : formatMass(body.massKg));

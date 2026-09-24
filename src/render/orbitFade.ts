@@ -27,9 +27,16 @@ export function orbitStaleMs(periodDays: number): number {
   return Math.min(10 * 365.25 * 86_400_000, Math.max(86_400_000, 10 * periodDays * 86_400_000));
 }
 
-/** Declutter priority: bigger wins. Moons rank below every planet and dwarf planet; within a kind, bigger radius wins. */
+/** Declutter priority: bigger wins. Moons and the nearby stars rank below every planet and dwarf planet; within a kind, bigger radius wins. */
 export function labelPriority(kind: TreeKind, radiusM: number): number {
-  return kind === 'moon' ? radiusM * 1e-3 : radiusM;
+  return kind === 'moon' || kind === 'nearstar' ? radiusM * 1e-3 : radiusM;
+}
+
+/** A nearby star's label is shown only while the camera is at least this high above the focused body (about 6.7 AU), or when the star is the focused body. */
+export const STAR_LABEL_MIN_ALTITUDE_M = 1e12;
+
+export function starLabelVisible(altitudeM: number, focused: boolean): boolean {
+  return focused || altitudeM >= STAR_LABEL_MIN_ALTITUDE_M;
 }
 
 /** A body's dot as drawn: screen centre (CSS px) and drawn diameter (its disc, or its sprite when it is smaller). */

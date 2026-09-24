@@ -1,5 +1,20 @@
 import type { BodyKind } from '../catalog/bodies';
 import { formatHours } from '../format/format';
+import { HELIO_FADE_LOW_M } from '../render/heliosphereMath';
+
+/** Shown for every nearby star. */
+export const STAR_NOTE = 'Position: real right ascension, declination and distance (Gaia DR3 and Hipparcos, via the Wikipedia list of nearest stars), held fixed because the star\'s own motion is invisible over 1700-2300. Radius: a schematic value for the spectral class. Drawn as a plain-colour sphere.';
+
+/** Sirius B only: the table gives it Sirius A's exact position. */
+export const SIRIUS_B_NOTE = 'Its catalog position is identical to Sirius A\'s, so it is drawn a schematic 7.5 arcseconds (about 20 AU) north of it.';
+
+/** What the heliosphere and the Oort cloud are: shown as the Deep space toggle's tooltip and in the README. */
+export const DEEP_SPACE_NOTE = 'The heliosphere (a translucent shell at the termination shock, about 94 AU, and one at the heliopause, about 120 AU) and the Oort cloud (15,000 statistically placed points between 2,000 and 100,000 AU) are schematic: nothing solid is there, the real bubble is not a sphere, and no individual Oort object has ever been observed. The twelve nearby stars are real.';
+
+/** The line under the toggles while the schematic deep-space layers can be seen: empty when they cannot (toggle off, or too close to the Sun to see the shells). */
+export function deepSpaceCaption(altitudeM: number, on: boolean): string {
+  return on && altitudeM >= HELIO_FADE_LOW_M ? 'Heliosphere and Oort cloud: schematic, not real objects' : '';
+}
 
 /** The info panel's one-line description of a body: its kind and, for a moon, what it orbits. */
 export function kindLabel(kind: BodyKind, parentName: string | null, spectralType?: string): string {

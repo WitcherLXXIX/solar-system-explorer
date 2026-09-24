@@ -1,5 +1,28 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_MAP_CREDIT, formatGravity, kindLabel, mapNote } from '../../src/ui/bodyText';
+import { DEFAULT_MAP_CREDIT, DEEP_SPACE_NOTE, STAR_NOTE, deepSpaceCaption, formatGravity, kindLabel, mapNote } from '../../src/ui/bodyText';
+
+describe('deep-space notes', () => {
+  it('says the heliosphere and Oort cloud are schematic, nothing solid, and no individual Oort object has been observed', () => {
+    expect(DEEP_SPACE_NOTE).toMatch(/schematic/);
+    expect(DEEP_SPACE_NOTE).toMatch(/termination shock/);
+    expect(DEEP_SPACE_NOTE).toMatch(/heliopause/);
+    expect(DEEP_SPACE_NOTE).toMatch(/Oort/);
+    expect(DEEP_SPACE_NOTE).toMatch(/nothing solid/);
+  });
+  it("says a star's position is real and fixed but its radius is schematic", () => {
+    expect(STAR_NOTE).toMatch(/Gaia/);
+    expect(STAR_NOTE).toMatch(/fixed/);
+    expect(STAR_NOTE).toMatch(/schematic/);
+  });
+  it('shows the on-screen caption only when the shells can be seen (from 1.5e13 m up) and the toggle is on', () => {
+    expect(deepSpaceCaption(1e9, true)).toBe('');
+    expect(deepSpaceCaption(1.49e13, true)).toBe('');
+    expect(deepSpaceCaption(1.5e13, true)).toMatch(/schematic/);
+    expect(deepSpaceCaption(1e17, true)).toMatch(/Heliosphere/);
+    expect(deepSpaceCaption(1e17, true)).toMatch(/Oort/);
+    expect(deepSpaceCaption(1e17, false)).toBe('');
+  });
+});
 
 describe('kindLabel', () => {
   it('names each kind, and the parent of a moon', () => {

@@ -79,3 +79,6 @@ html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
 }
 .group-toggle { background: none; border: 0; color: var(--dim); font: inherit; cursor: pointer; padding: 4px 0 0 0; text-align: left; }
 .group-toggle:hover { color: inherit; }
+
+#caption { position: absolute; top: 62px; left: 190px; max-width: 420px; font-size: 11px; color: var(--dim); pointer-events: none;
+  text-shadow: 0 0 4px #000, 0 0 8px #000; }

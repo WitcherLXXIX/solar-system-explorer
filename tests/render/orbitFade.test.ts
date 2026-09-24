@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   MOON_LABEL_RADII, MOON_ORBIT_FULL_RADII, MOON_ORBIT_GONE_RADII, labelPriority, moonLabelVisible, moonOrbitOpacity,
-  orbitStaleMs, spriteHiddenByParent,
+  orbitStaleMs, spriteHiddenByParent, starLabelVisible, STAR_LABEL_MIN_ALTITUDE_M,
 } from '../../src/render/orbitFade';
 
 const R = 1e9; // a moon orbit radius
@@ -68,5 +68,21 @@ describe('spriteHiddenByParent', () => {
   });
   it('hides a moon that sits inside a large parent disc', () => {
     expect(spriteHiddenByParent({ x: 300, y: 300, drawnPx: 4 }, { x: 320, y: 300, drawnPx: 120 })).toBe(true);
+  });
+});
+
+describe('star labels', () => {
+  it('appear only from about 6.7 AU of altitude up, or when the star is the focused body', () => {
+    expect(STAR_LABEL_MIN_ALTITUDE_M).toBe(1e12);
+    expect(starLabelVisible(1e7, false)).toBe(false); // close to a planet: twelve stray names would be clutter
+    expect(starLabelVisible(9.9e11, false)).toBe(false);
+    expect(starLabelVisible(1e12, false)).toBe(true);
+    expect(starLabelVisible(1e17, false)).toBe(true);
+    expect(starLabelVisible(1e3, true)).toBe(true); // flying to a star keeps its own name
+  });
+  it('rank below every planet in the declutter, like moons, so a star never hides a planet label', () => {
+    expect(labelPriority('nearstar', 1.18e9)).toBeLessThan(labelPriority('planet', 2.4e6));
+    expect(labelPriority('nearstar', 1.18e9)).toBeCloseTo(labelPriority('moon', 1.18e9), 12);
+    expect(labelPriority('nearstar', 1.18e9)).toBeGreaterThan(labelPriority('nearstar', 1.7e8)); // bigger star wins between the pair Sirius A and B
   });
 });
