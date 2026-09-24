@@ -10,6 +10,7 @@ import { getDotTexture } from './dotTexture';
 import { pickMeshDetail, type MeshDetail } from './lod';
 import { orientationToThree } from './orientation';
 import { RingEffect } from './rings';
+import { nearStarSpriteVisible, starSpriteStyle, type StarSpriteStyle } from './starPoints';
 import { SPRITE_MIN_SIZE_PX, illuminationFraction, spriteAppearance } from './sprite';
 import { createSurfaceMaterial, dummyTexture } from './surfaceMaterial';
 import type { TextureManager } from './textureManager';
@@ -85,6 +86,8 @@ export class BodyView {
   private readonly surface: THREE.ShaderMaterial;
   private readonly effects: BodyEffect[];
   private detail: MeshDetail = 'far';
+  /** Set for the nearby stars only: their dot size and opacity come from the spectral class instead of the planet sprite model. */
+  private readonly starStyle: StarSpriteStyle | null;
   private hiRes = false;
   private readonly sunDir = new THREE.Vector3();
   private readonly camRelBody = new THREE.Vector3();
@@ -97,6 +100,8 @@ export class BodyView {
     private readonly textures: TextureManager,
   ) {
     this.hasHiRes = data.maps.color?.hi !== undefined;
+    if (data.kind === 'nearstar' && data.spectralType === undefined) throw new Error(`${data.id} is a nearby star with no spectral type`);
+    this.starStyle = data.kind === 'nearstar' && data.spectralType !== undefined ? starSpriteStyle(data.spectralType) : null;
     this.surface = createSurfaceMaterial(data.color, isStarKind(data.kind));
     this.mesh = new THREE.Mesh(farGeometry, this.surface);
     this.mesh.scale.setScalar(data.radiusM);
@@ -158,7 +163,7 @@ export class BodyView {
     const asSphere = screenDiameterPx >= SPRITE_THRESHOLD_PX;
     this.hiRes = ctx.hiRes;
     this.mesh.visible = asSphere;
-    this.sprite.visible = !asSphere;
+    this.sprite.visible = this.starStyle ? nearStarSpriteVisible(screenDiameterPx, this.starStyle.sizePx) : !asSphere;
 
     // Orientation is needed by the effects even while the body is a sprite, so it is set every frame.
     this.mesh.quaternion.setFromRotationMatrix(orientationToThree(entry.orientation));
@@ -168,8 +173,10 @@ export class BodyView {
       this.mesh.position.set(rel[0], rel[1], rel[2]);
     } else {
       this.releaseHiRes();
+    }
+    if (!asSphere || this.starStyle) {
       this.sprite.position.set(rel[0], rel[1], rel[2]);
-      const { sizePx, opacity } = spriteAppearance(
+      const { sizePx, opacity } = this.starStyle ?? spriteAppearance(
         screenDiameterPx,
         illuminationFraction(entry.position, ctx.sunPos, ctx.cameraPos),
         this.data.kind === 'star',
