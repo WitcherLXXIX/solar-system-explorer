@@ -1,6 +1,6 @@
 # Solar System Explorer
 
-A browser-based 3D solar system you can zoom through continuously, from just above a planet's surface out past Neptune, using real sizes, real distances and real planetary positions. Phases 1, 2a and 2b of a larger project (see `docs/superpowers/specs/`).
+A browser-based 3D solar system you can zoom through continuously, from just above a planet's surface out past Neptune and on to the nearest stars (about 10.6 light-years), using real sizes, real distances and real planetary positions. Phases 1, 2a, 2b, 3 and 4 of a larger project (see `docs/superpowers/specs/`).
 
 Planet fidelity in this phase: high-resolution surface maps (loaded only for nearby bodies), atmospheres, Saturn's rings with ring and planet shadows and faint rings for the other three giants, and Earth's night lights, cloud layer and ocean glint. You can descend to 0.2% of a planet's radius above its surface (about 13 km at Earth). Below about 3,800 km the 8K map is being magnified (it is about 4.9 km per texel at Earth's equator); at 1,000 km one texel already spans about 4 screen pixels; real terrain detail needs streamed tiles, which this app does not have.
 
@@ -34,7 +34,25 @@ Added: two schematic belts (4000 main-belt points, 3000 Kuiper-belt points, togg
 
 **Credits.** JPL Small-Body Database and Horizons (`ssd-api.jpl.nasa.gov`); NASA/NSSDC and `science.nasa.gov` pages for radii cross-checks. For the four asteroids the radius "second source" (Horizons `RAD`) is the same SBDB diameter halved, so it is not an independent check.
 
-**Deferred.** Trojans and resonant populations as separate objects, more named Kuiper objects, a physical dust or ion tail, collisions or belt evolution, image maps for small bodies, parabolic or hyperbolic orbits, non-gravitational comet forces, planetary perturbations of the named objects, GPU-side Kepler propagation, an Oort cloud.
+**Deferred.** Trojans and resonant populations as separate objects, more named Kuiper objects, a physical dust or ion tail, collisions or belt evolution, image maps for small bodies, parabolic or hyperbolic orbits, non-gravitational comet forces, planetary perturbations of the named objects, GPU-side Kepler propagation.
+
+## Phase 4: deep space
+
+Added: the camera limit is raised to 1e17 m and the far plane to 1e18 m; twelve real nearby stars in a collapsible "Nearby stars" group (55 bodies in all); and a schematic heliosphere and Oort cloud behind a "Deep space" toggle.
+
+**The heliosphere and the Oort cloud are schematic.** The heliosphere is two Sun-centred translucent shells at about 94 AU (termination shock) and 120 AU (heliopause); the real one is an asymmetric bubble. The Oort cloud is 15,000 statistically placed Kepler points between 2,000 and 100,000 AU, half of them retrograde, with no named objects; its motion is too slow to see. As drawn, the heliosphere is a fairly strong teal/blue double ring (translucent, so orbits show through it) and may want a lower `HELIO_TAU_PER_AU`. Both fade in with camera altitude, so neither costs anything at planet scale.
+
+**The stars.** Real RA, Dec, distance and spectral type come from the spec table and are held fixed (no proper motion). Radii are a schematic value per spectral class, not measured. Sirius B is drawn a schematic 7.5 arcseconds (about 20 AU) north of Sirius A, because the table gives it Sirius A's exact position. A star up close is a plain-colour sphere with no glow.
+
+**Where this differs from the spec's wording.** The near-plane cap stays at 1e7 m (raising it would clip every sprite closer than the new near plane). The far plane is 1e18 m, not 1e17: 61 Cygni A can be 2.08e17 m from a camera at the limit, and Proxima is the nearest of the twelve stars, not the farthest.
+
+**Measured** (`npm run smoke`, visible Chromium window, all checks passed with no console errors): 54.6 fps at the full-system view with 55 bodies; 55.6 fps at 3e15 m with everything on (both belts, the full Oort cloud, the heliosphere). 9 stars in view at maximum zoom (best of 8 directions). Alpha Centauri A and B are 7.5 px apart from 3e14 m; Sirius A and B 7.2 px. The heliosphere adds about 44,000 lit pixels at 800 AU and the Oort cloud about 44,000 at 1e16 m.
+
+**Hooks** for tests, new this phase: `window.__solar.setDeepSpace(on)`, `deepSpaceState()`, `starsInView()` and `screenOf(id)`.
+
+**Sources and tuning constants:** `docs/deep-space-sources.md`.
+
+**Deferred.** Stars beyond 11.4 ly, stellar physics, a galactic backdrop, time-accurate proper motion, an asymmetric heliosphere, individually named Oort objects, star glow.
 
 ## Run
 
@@ -56,7 +74,7 @@ The set mixes resolutions because that is what exists: 8K (8192x4096) for Earth 
 
 ## How the scale works
 
-All positions are float64 metres in the heliocentric ecliptic J2000 frame. Every frame they are subtracted from the camera position in float64 and only then cast to float32 for the GPU, so the render camera is always at the origin and float32 jitter is avoided by construction. This was checked by eye from about 1.27e4 m above Earth's surface out to about 1.2e13 m (past Neptune), not with an automated precision test. A logarithmic depth buffer covers the near/far range.
+All positions are float64 metres in the heliocentric ecliptic J2000 frame. Every frame they are subtracted from the camera position in float64 and only then cast to float32 for the GPU, so the render camera is always at the origin and float32 jitter is avoided by construction. This was checked by eye from about 1.27e4 m above Earth's surface out to about 1e17 m (about 10.6 ly, past Proxima Centauri). The far end (stars, the Oort cloud) was checked by eye, not with an automated precision test. A logarithmic depth buffer covers the near/far range.
 
 ## Credits
 
@@ -66,3 +84,4 @@ All positions are float64 metres in the heliocentric ecliptic J2000 frame. Every
 - Moon and dwarf-planet orbits: JPL Planetary Satellite Mean Elements (`ssd.jpl.nasa.gov/sats/elem`) and the JPL Small-Body Database; accuracy checked against JPL Horizons.
 - Moon and dwarf-planet rotation: the IAU Working Group on Cartographic Coordinates and Rotational Elements (2015 report, Archinal et al. 2018); none of its constants are currently used, because `ROTATIONS` in `src/catalog/orbits.ts` is empty (see Orientation above).
 - Moon and dwarf-planet maps: the Moon from Solar System Scope (CC BY 4.0); every other map credited here as it is added: Ceres from NASA/JPL-Caltech/UCLA/MPS/DLR/IDA (Dawn Framing Camera global mosaic, 400 m/pixel, public domain, "please cite authors") (bodies with no map are drawn in a plain colour).
+- Nearby stars: Wikipedia, "List of nearest stars" (https://en.wikipedia.org/wiki/List_of_nearest_stars), itself citing Gaia DR3 and Hipparcos, fetched 2026-09-23.
