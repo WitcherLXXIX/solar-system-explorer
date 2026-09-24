@@ -3,6 +3,7 @@ import type { BodyData } from '../catalog/bodies';
 import type { BodyEffect, BodyRenderState } from './bodyView';
 import { ATMOSPHERE_MIN_PX } from './lod';
 import type { TextureManager } from './textureManager';
+import { SOFT_LAMBERT_GLSL } from './terminatorMath';
 
 const VERT = /* glsl */ `
 #include <common>
@@ -17,16 +18,17 @@ void main() {
 }
 `;
 
-const FRAG = /* glsl */ `
+export const CLOUD_FRAG =/* glsl */ `
 #include <common>
 #include <logdepthbuf_pars_fragment>
 uniform sampler2D uClouds; // coverage in the red channel (linear)
 uniform vec3 uSunDir;
 varying vec2 vUv;
 varying vec3 vNormalW;
+${SOFT_LAMBERT_GLSL}
 void main() {
   float cover = texture2D(uClouds, vUv).r;
-  float ndl = max(dot(normalize(vNormalW), uSunDir), 0.0);
+  float ndl = softLambert(dot(normalize(vNormalW), uSunDir));
   gl_FragColor = vec4(vec3(ndl + 0.04 / PI), cover); // white cloud, same Lambert model as the surface
   #include <logdepthbuf_fragment>
   #include <colorspace_fragment>
@@ -48,7 +50,7 @@ export class CloudEffect implements BodyEffect {
     if (!data.maps.clouds || data.cloudShellFraction === undefined) throw new Error(`${data.id} has no cloud layer`);
     this.material = new THREE.ShaderMaterial({
       vertexShader: VERT,
-      fragmentShader: FRAG,
+      fragmentShader: CLOUD_FRAG,
       uniforms: { uClouds: { value: new THREE.Texture() }, uSunDir: { value: new THREE.Vector3(0, 1, 0) } },
       transparent: true,
       depthWrite: false,

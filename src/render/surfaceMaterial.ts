@@ -5,6 +5,7 @@ import {
 } from './earthMath';
 import { glslFloat } from './glsl';
 import { RING_SHADOW_STRENGTH } from './ringMath';
+import { SOFT_LAMBERT_GLSL } from './terminatorMath';
 
 let dummy: THREE.DataTexture | null = null;
 /** A 1x1 white texture bound to every sampler that has no real map, so uniforms are always valid. */
@@ -57,7 +58,7 @@ varying vec2 vUv;
 varying vec3 vNormalW;
 varying vec3 vPosB;
 varying vec3 vPosW;
-
+${SOFT_LAMBERT_GLSL}
 void main() {
   vec3 albedo = mix(uColor, texture2D(uMap, vUv).rgb, uHasMap);
   vec3 N = normalize(vNormalW);
@@ -74,7 +75,7 @@ void main() {
         if (u > 0.0 && u < 1.0) shadow = 1.0 - ${glslFloat(RING_SHADOW_STRENGTH)} * textureLod(uRingAlpha, vec2(u, 0.5), 0.0).a;
       }
     }
-    float diffuse = max(ndl, 0.0) * shadow;
+    float diffuse = softLambert(ndl) * shadow;
     lit = albedo * (diffuse + 0.04 / PI);
     // Night lights blend in across a soft terminator and are dimmed by cloud cover (mirrors earthMath.nightFactor).
     // Cloud coverage is sampled once, outside the branches, and reused for the dimming and the glint suppression.

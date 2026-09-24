@@ -8,6 +8,8 @@ import { ATMOSPHERE_FRAG } from '../../src/render/atmosphere';
 import { PLANET_SHADOW_PENUMBRA, RING_SHADOW_STRENGTH } from '../../src/render/ringMath';
 import { RING_FRAG } from '../../src/render/rings';
 import { SURFACE_FRAG } from '../../src/render/surfaceMaterial';
+import { CLOUD_FRAG } from '../../src/render/clouds';
+import { SOFT_LAMBERT_GLSL } from '../../src/render/terminatorMath';
 
 /** Pulls the numbers out of a GLSL expression with a regular expression and fails loudly if the expression is gone. */
 function grab(source: string, pattern: RegExp): number[] {
@@ -51,5 +53,17 @@ describe('atmosphere shader constants mirror atmosphereMath', () => {
   it('Mie extinction factor, in both the light and the view path', () => {
     const all = [...ATMOSPHERE_FRAG.matchAll(/vec3\(uMie \* ([\d.]+)\)/g)].map((m) => Number(m[1]));
     expect(all).toEqual([MIE_EXTINCTION_FACTOR, MIE_EXTINCTION_FACTOR]);
+  });
+});
+
+describe('the soft terminator is used by the surface and cloud shaders', () => {
+  it('the surface shader includes the softLambert function and calls it on N.L', () => {
+    expect(SURFACE_FRAG).toContain(SOFT_LAMBERT_GLSL);
+    expect(SURFACE_FRAG).toMatch(/float diffuse = softLambert\(ndl\)/);
+    expect(SURFACE_FRAG).not.toMatch(/max\(ndl, 0\.0\) \* shadow/);
+  });
+  it('the cloud shader includes it too', () => {
+    expect(CLOUD_FRAG).toContain(SOFT_LAMBERT_GLSL);
+    expect(CLOUD_FRAG).toMatch(/softLambert\(dot\(normalize\(vNormalW\), uSunDir\)\)/);
   });
 });
