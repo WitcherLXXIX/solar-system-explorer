@@ -61,7 +61,7 @@ html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
   font: inherit; font-size: 13px; padding: 4px 6px; color-scheme: dark; }
 .zone { color: var(--dim); font-size: 12px; }
 
-#credit { position: absolute; bottom: 4px; right: 12px; font-size: 10px; color: var(--dim); pointer-events: none; }
+#credit { position: absolute; bottom: 4px; right: 12px; font-size: 10px; color: var(--dim); pointer-events: none; max-width: 62ch; text-align: right; }
 
 /* The centred time bar (about 680 px) would overlap the scale readout (16 to about 232 px) below about 1140 px wide,
    so between 761 and 1200 px it is anchored to the right of the readout and wraps instead of centring. */
@@ -76,3 +76,5 @@ html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
   #timebar { left: 16px; }
   #scale { bottom: 145px; }
 }
+.group-toggle { background: none; border: 0; color: var(--dim); font: inherit; cursor: pointer; padding: 4px 0 0 0; text-align: left; }
+.group-toggle:hover { color: inherit; }

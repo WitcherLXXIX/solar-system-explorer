@@ -2,9 +2,9 @@ import './style.css';
 import { CameraController, sunwardYaw, DEFAULT_PITCH, type FocusSource } from './camera/cameraController';
 import { SimClock } from './clock/clock';
 import { frameDelta } from './clock/frameDelta';
-import { BODY_IDS, getBody, type BodyId } from './catalog/bodies';
+import { BODY_IDS, getBody, isSmallBodyKind, type BodyId } from './catalog/bodies';
 import { computeFrame, type Frame } from './ephemeris/frame';
-import { labelPriority, moonLabelVisible } from './render/orbitFade';
+import { labelPriority, moonLabelVisible, smallBodyLabelVisible } from './render/orbitFade';
 import { SolarScene, type FrameInput, type RenderInfo } from './render/solarScene';
 import { isWebGL2Available } from './render/webgl';
 import { length, sub } from './math';
@@ -65,6 +65,11 @@ function moonLabelAllowed(id: BodyId, info: Map<BodyId, RenderInfo>): boolean {
   return moonLabelVisible(info.get(body.parent)!.distanceM, orbitRadiusM);
 }
 
+/** A named small body's label shows only while the camera is within 5 AU of it, so the full-system view stays uncluttered. */
+function smallBodyLabelAllowed(id: BodyId, info: Map<BodyId, RenderInfo>): boolean {
+  return !isSmallBodyKind(getBody(id).kind) || smallBodyLabelVisible(info.get(id)!.distanceM);
+}
+
 function resize(): void {
   scene.resize(window.innerWidth, window.innerHeight);
 }
@@ -119,7 +124,7 @@ function loop(now: number): void {
         priority: labelPriority(getBody(b.id).kind, getBody(b.id).radiusM),
         // Hide behind the camera, off-screen, occluded, when the body itself already fills much of the view,
         // or (moons) when the camera is far from the parent.
-        visible: b.inFront && !coversOwnLabel && moonLabelAllowed(b.id, info) && !isLabelOccluded(b, onScreen) &&
+        visible: b.inFront && !coversOwnLabel && moonLabelAllowed(b.id, info) && smallBodyLabelAllowed(b.id, info) && !isLabelOccluded(b, onScreen) &&
           b.screenDiameterPx < scene.viewportHeight * 0.5 &&
           b.x > -50 && b.x < window.innerWidth + 50 && b.y > -20 && b.y < window.innerHeight + 20,
       };

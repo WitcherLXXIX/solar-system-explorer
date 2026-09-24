@@ -1,3 +1,4 @@
+import { AU_M } from '../units';
 import { smoothstep } from '../math';
 import { orbitLineOpacity } from './cameraRelative';
 import type { TreeKind } from '../ui/bodyTree';
@@ -51,4 +52,11 @@ export const BELT_MAX_OPACITY = 0.8;
 /** Opacity of both belts from the camera's altitude: gone at planet scale (a few far dots would only look like stars), full at system scale. */
 export function beltOpacity(altitudeM: number): number {
   return BELT_MAX_OPACITY * smoothstep(BELT_FADE_LOW_M, BELT_FADE_HIGH_M, altitudeM);
+}
+
+/** A named small body's label is shown only while the camera is within this distance of it. */
+export const SMALL_BODY_LABEL_RANGE_M = 5 * AU_M;
+
+export function smallBodyLabelVisible(distanceM: number): boolean {
+  return distanceM < SMALL_BODY_LABEL_RANGE_M;
 }

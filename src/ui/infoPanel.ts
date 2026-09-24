@@ -1,9 +1,9 @@
-import { getBody, type BodyId } from '../catalog/bodies';
+import { getBody, isSmallBodyKind, type BodyId } from '../catalog/bodies';
 import { orbitalPeriodDays } from '../ephemeris/ephemeris';
 import {
   formatDistance, formatMass, formatPeriodDays, formatRadius, formatTemp,
 } from '../format/format';
-import { dayLengthText, formatGravity, kindLabel, mapNote } from './bodyText';
+import { SMALL_BODY_NOTE, TAIL_NOTE, dayLengthText, formatGravity, kindLabel, mapNote } from './bodyText';
 import { el } from './dom';
 
 export function createInfoPanel(root: HTMLElement): { setBody(id: BodyId): void; update(sunDistanceM: number | null): void } {
@@ -12,7 +12,8 @@ export function createInfoPanel(root: HTMLElement): { setBody(id: BodyId): void;
   const list = el('dl', 'facts');
   const foot = el('p', 'dim small');
   const mapFoot = el('p', 'dim small');
-  root.append(heading, kind, list, foot, mapFoot);
+  const noteFoot = el('p', 'dim small');
+  root.append(heading, kind, list, foot, mapFoot, noteFoot);
   let sunDistanceValue: HTMLElement | null = null;
 
   const addRow = (label: string, value: string, title?: string): HTMLElement => {
@@ -30,7 +31,7 @@ export function createInfoPanel(root: HTMLElement): { setBody(id: BodyId): void;
       const parentName = body.parent !== null && body.parent !== 'sun' ? getBody(body.parent).name : null;
       const periodNote =
         body.kind === 'moon' ? `Sidereal period around ${parentName ?? 'its parent'}`
-        : body.kind === 'dwarf' ? 'Sidereal period around the Sun'
+        : body.kind === 'dwarf' || isSmallBodyKind(body.kind) ? 'Sidereal period around the Sun'
         : 'From astronomy-engine (VSOP87)';
       heading.textContent = body.name;
       kind.textContent = kindLabel(body.kind, parentName);
@@ -45,6 +46,7 @@ export function createInfoPanel(root: HTMLElement): { setBody(id: BodyId): void;
       sunDistanceValue = addRow('Distance from Sun', '');
       foot.textContent = `Source: ${body.source}`;
       mapFoot.textContent = mapNote(body.maps.color !== undefined, body.mapCredit);
+      noteFoot.textContent = body.kind === 'comet' ? `${SMALL_BODY_NOTE} ${TAIL_NOTE}` : isSmallBodyKind(body.kind) ? SMALL_BODY_NOTE : '';
     },
     update(sunDistanceM) {
       if (sunDistanceValue) sunDistanceValue.textContent = sunDistanceM === null ? '—' : formatDistance(sunDistanceM);
