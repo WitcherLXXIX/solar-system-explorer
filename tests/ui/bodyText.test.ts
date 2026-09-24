@@ -12,6 +12,10 @@ describe('kindLabel', () => {
   it('still says Moon when the parent name is missing', () => {
     expect(kindLabel('moon', null)).toBe('Moon');
   });
+  it('names a nearby star with its spectral type', () => {
+    expect(kindLabel('nearstar', null, 'M5.5Ve')).toBe('Nearby star (M5.5Ve)');
+    expect(kindLabel('nearstar', null)).toBe('Nearby star');
+  });
 });
 
 describe('mapNote', () => {

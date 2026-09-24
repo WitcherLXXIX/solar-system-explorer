@@ -2,9 +2,10 @@ import type { BodyKind } from '../catalog/bodies';
 import { formatHours } from '../format/format';
 
 /** The info panel's one-line description of a body: its kind and, for a moon, what it orbits. */
-export function kindLabel(kind: BodyKind, parentName: string | null): string {
+export function kindLabel(kind: BodyKind, parentName: string | null, spectralType?: string): string {
   switch (kind) {
     case 'star': return 'Star (G2V)';
+    case 'nearstar': return spectralType ? `Nearby star (${spectralType})` : 'Nearby star';
     case 'planet': return 'Planet';
     case 'dwarf': return 'Dwarf planet';
     case 'moon': return parentName ? `Moon of ${parentName}` : 'Moon';

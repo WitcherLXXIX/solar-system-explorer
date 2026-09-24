@@ -7,14 +7,20 @@ export type BodyId =
   | 'mimas' | 'enceladus' | 'tethys' | 'dione' | 'rhea' | 'titan' | 'iapetus'
   | 'miranda' | 'ariel' | 'umbriel' | 'titania' | 'oberon' | 'triton' | 'pluto' | 'charon'
   | 'ceres' | 'eris' | 'haumea' | 'makemake'
-  | 'vesta' | 'pallas' | 'hygiea' | 'juno'  | 'halley' | 'halebopp' | 'c67p' | 'swifttuttle';
+  | 'vesta' | 'pallas' | 'hygiea' | 'juno'  | 'halley' | 'halebopp' | 'c67p' | 'swifttuttle'
+  | 'proxima' | 'alphacena' | 'alphacenb' | 'barnard' | 'wolf359' | 'lalande21185'
+  | 'siriusa' | 'siriusb' | 'ross154' | 'epseri' | 'ross128' | 'cygni61a';
 
-export type BodyKind = 'star' | 'planet' | 'moon' | 'dwarf' | 'asteroid' | 'tno' | 'comet';
+export type BodyKind = 'star' | 'planet' | 'moon' | 'dwarf' | 'asteroid' | 'tno' | 'comet' | 'nearstar';
 
 /** The kinds phase 3 adds: named asteroids and comets (`tno` is unused until a Kuiper object with a published radius is added). */
 export const SMALL_BODY_KINDS: readonly BodyKind[] = ['asteroid', 'tno', 'comet'];
 export function isSmallBodyKind(kind: BodyKind): boolean {
   return SMALL_BODY_KINDS.includes(kind);
+}
+/** The Sun and the twelve nearby stars: self-luminous, drawn unlit, with no orbit line. */
+export function isStarKind(kind: BodyKind): boolean {
+  return kind === 'star' || kind === 'nearstar';
 }
 /** Where a body's position comes from: astronomy-engine, or the bundled mean elements in `orbits.ts`. */
 export type OrbitSource = 'astronomy-engine' | 'elements';
@@ -102,6 +108,8 @@ export interface BodyData {
   cloudShellFraction?: number;
   /** CSS colour used for the flat fallback, sprites and orbit lines. */
   color: string;
+  /** Nearby stars only: the spectral type from the sourced table (e.g. "M5.5Ve"). */
+  spectralType?: string;
   source: string;
 }
 
