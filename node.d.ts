@@ -1,7 +1,7 @@
-// Type definitions for Node.js modules used in tests
+// Minimal hand-written types for the Node.js APIs used in tests, since @types/node is not installed.
+// Delete this file (and tests/tsconfig.json's "node" entry in "types") if @types/node is ever added.
 declare module 'node:fs' {
-  export function readFileSync(path: string | Buffer | number, options?: { encoding?: string } | string): string | Buffer;
-  export function readFileSync(path: string | Buffer | number, encoding?: string): string;
+  export function readFileSync(path: string, encoding: 'utf8'): string;
 }
 
 declare module 'node:url' {
