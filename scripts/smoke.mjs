@@ -162,17 +162,100 @@ try {
   check(phobosAlt < 30, `Phobos's minimum altitude is 0.2% of its radius (${phobosAlt.toFixed(1)} m)`);
   check((await page.evaluate(() => window.__solar.litPixels())) > 500, 'Phobos still renders at its minimum altitude');
 
-  // No clutter at the full-system view, and the frame rate with all 35 bodies.
+  // No clutter at the full-system view, and the frame rate with all 43 bodies.
   await view('2026-09-20T12:00:00Z', 'sun', 1e12, 0, 60);
   const systemLabels = await page.evaluate(() => window.__solar.labelsShown());
   check(!systemLabels.some((id) => MOON_IDS.includes(id)), `no moon labels at the full-system view (${systemLabels.join(', ')})`);
   const fpsSystem = await page.evaluate(() => window.__solar.fps(3000));
-  console.log(`INFO  frame rate at the full-system view with all 35 bodies: ${fpsSystem.toFixed(1)} fps`);
+  console.log(`INFO  frame rate at the full-system view with all 43 bodies: ${fpsSystem.toFixed(1)} fps`);
   check(fpsSystem >= 15, `frame rate at the full-system view is usable (${fpsSystem.toFixed(1)} fps; target 30 or better)`);
   await view('2026-09-20T12:00:00Z', 'jupiter', 4e9, 30, 15);
   const fpsJupiter = await page.evaluate(() => window.__solar.fps(3000));
   console.log(`INFO  frame rate in the Jupiter system with its moons, orbit lines and labels: ${fpsJupiter.toFixed(1)} fps`);
   check(fpsJupiter >= 15, `frame rate in the Jupiter system is usable (${fpsJupiter.toFixed(1)} fps; target 30 or better)`);
+
+  // ---- phase 3: belts, named small bodies, comet tails ----
+  const shot = async (name) => {
+    if (process.env.SMOKE_SHOT_DIR) await page.screenshot({ path: `${process.env.SMOKE_SHOT_DIR}/${name}.png` });
+  };
+  const SMALL_IDS = ['vesta', 'pallas', 'hygiea', 'juno', 'halley', 'halebopp', 'c67p', 'swifttuttle'];
+
+  const beltCounts = await page.evaluate(() => window.__solar.beltCounts());
+  check(beltCounts.main >= 3000 && beltCounts.kuiper >= 2000, `both belts are populated (${beltCounts.main} and ${beltCounts.kuiper} points)`);
+
+  // Belts on and off from above the ecliptic at asteroid-belt scale, then at Kuiper-belt scale. Measured 2026-09-24 (lit pixels
+  // off -> on): asteroid belt 28914 -> 53813 (+24899), Kuiper belt 23268 -> 41196 (+17928); the 300 threshold is far below half of either.
+  for (const [label, altitude, minDiff] of [['asteroid belt', 1.2e12, 300], ['Kuiper belt', 1.2e13, 300]]) {
+    await view('2026-09-20T12:00:00Z', 'sun', altitude, 0, 70);
+    await page.evaluate(() => window.__solar.setBelts(true));
+    await settle();
+    const on = await stats();
+    check(await page.evaluate(() => window.__solar.beltsVisible()), `the belts are drawn at the ${label} view`);
+    await shot(`phase3-${label.replace(' ', '-')}`);
+    await page.evaluate(() => window.__solar.setBelts(false));
+    await settle();
+    const off = await stats();
+    await page.evaluate(() => window.__solar.setBelts(true));
+    check(on.lit - off.lit >= minDiff, `the ${label} adds pixels (lit pixels ${off.lit} -> ${on.lit})`);
+  }
+
+  // Close to a planet the belts are faded out (a few far dots would look like stars).
+  await view('2026-09-20T12:00:00Z', 'earth', 3e7, 0, 20);
+  await settle();
+  check(!(await page.evaluate(() => window.__solar.beltsVisible())), 'the belts are hidden when the camera is close to Earth');
+
+  // Named small bodies: list group, flight, render.
+  await page.click('button[aria-label="Show the small bodies"]');
+  const smallRows = await page.$$eval('#bodies .body-btn', (els) => els.map((e) => e.textContent));
+  check(['Vesta', 'Halley', 'Swift-Tuttle', 'Hale-Bopp'].every((n) => smallRows.includes(n)), 'the Small bodies group lists the named objects');
+  for (const id of ['vesta', 'halley', 'swifttuttle']) {
+    await view('2026-09-20T12:00:00Z', 'sun', 3e12, 0, 60);
+    await page.evaluate((target) => window.__solar.flyTo(target), id);
+    await page.waitForFunction(() => !window.__solar.isFlying(), null, { timeout: 30000 });
+    check((await page.evaluate(() => window.__solar.focusId())) === id, `flew to ${id}`);
+    check((await page.evaluate(() => window.__solar.litPixels())) > 100, `${id} renders after the flight`);
+  }
+  // Every named body can be focused and produces finite output at its own minimum altitude.
+  for (const id of SMALL_IDS) {
+    await view('2026-09-20T12:00:00Z', id, 1, 0, 20);
+    const alt = await page.evaluate(() => window.__solar.altitudeM());
+    check(Number.isFinite(alt) && alt > 0 && alt < 1e5, `${id}: minimum altitude is small and finite (${alt.toFixed(1)} m)`);
+  }
+
+  // Comet tails: present near perihelion, absent far from the Sun, gone with effects off. Measured 2026-09-24: Halley 1986 lit
+  // pixels 50228 -> 55736 (+5508) with the tail; the 150 threshold is under half of that.
+  await view('1986-02-09T12:00:00Z', 'halley', 1e11, 90, 10);
+  await settle();
+  check((await page.evaluate(() => window.__solar.tailsVisible())).includes('halley'), 'Halley shows a tail near its 1986 perihelion');
+  const tailOn = await stats();
+  await shot('phase3-halley-1986');
+  await page.evaluate(() => window.__solar.setEffects(false));
+  await settle();
+  const tailOff = await stats();
+  await page.evaluate(() => window.__solar.setEffects(true));
+  check(tailOn.lit - tailOff.lit >= 150, `Halley's tail adds pixels (lit pixels ${tailOff.lit} -> ${tailOn.lit})`);
+  await view('2026-09-23T00:00:00Z', 'halley', 1e11, 90, 10);
+  await settle();
+  check(!(await page.evaluate(() => window.__solar.tailsVisible())).includes('halley'), 'Halley has no tail far from the Sun (2026)');
+  await view('1997-04-01T12:00:00Z', 'halebopp', 1e11, 90, 10);
+  await settle();
+  check((await page.evaluate(() => window.__solar.tailsVisible())).includes('halebopp'), 'Hale-Bopp shows a tail near its 1997 perihelion');
+  await shot('phase3-halebopp-1997');
+
+  // Labels: no small-body labels at the full-system view.
+  await view('2026-09-20T12:00:00Z', 'sun', 1e12, 0, 60);
+  const labelsNow = await page.evaluate(() => window.__solar.labelsShown());
+  check(!labelsNow.some((id) => SMALL_IDS.includes(id)), `no small-body labels at the full-system view (${labelsNow.join(', ')})`);
+
+  // Frame rate with everything on: 43 bodies and orbit lines, both belts (7000 points), a comet tail.
+  const fpsAll = await page.evaluate(() => window.__solar.fps(3000));
+  console.log(`INFO  frame rate at the full-system view with 43 bodies and both belts: ${fpsAll.toFixed(1)} fps`);
+  check(fpsAll >= 15, `frame rate with the full population is usable (${fpsAll.toFixed(1)} fps; target 30 or better)`);
+  await view('1986-02-09T12:00:00Z', 'halley', 1e11, 90, 10);
+  const fpsTail = await page.evaluate(() => window.__solar.fps(3000));
+  console.log(`INFO  frame rate near Halley with its tail: ${fpsTail.toFixed(1)} fps`);
+  check(fpsTail >= 15, `frame rate near a comet with its tail is usable (${fpsTail.toFixed(1)} fps; target 30 or better)`);
+  await shot('phase3-footer');
 
   check(errors.length === 0, `no console errors${errors.length ? `: ${errors.join(' | ')}` : ''}`);
   await page.waitForTimeout(HOLD_MS);

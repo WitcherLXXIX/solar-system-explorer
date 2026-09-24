@@ -18,6 +18,24 @@ Planet fidelity in this phase: high-resolution surface maps (loaded only for nea
 
 **Known limits.** No eclipses or shadows on moons, no libration, no irregular or small moons (Nereid, Hyperion and others), no mutual perturbations beyond mean-element precession. At the fastest time speeds orbits alias: Phobos circles Mars in 7.6 hours (about 1,150 times a year), so at one year per second it strobes; that is expected, not a bug.
 
+## Phase 3: small bodies
+
+Added: two schematic belts (4000 main-belt points, 3000 Kuiper-belt points, toggled by "Belts"), 8 named small bodies (the asteroids Vesta, Pallas, Hygiea and Juno; the comets Halley, Hale-Bopp, 67P/Churyumov-Gerasimenko and Swift-Tuttle, listed in a collapsible "Small bodies" group), and comet tails. That makes 43 bodies. Quaoar, Orcus, Sedna and Gonggong were planned but dropped because no radius could be sourced (see `docs/small-body-sources.md`).
+
+**The belts are schematic.** They are hand-shaped statistical fields (a hump with Kirkwood gaps; a classical belt with a plutino bump), NOT individual real objects; every tuning constant is listed in `docs/small-body-sources.md`. They fade out when the camera is close to a body.
+
+**Accuracy.** Named bodies are two-body Keplerian from the JPL Small-Body Database epoch: no planetary perturbations, and comets ignore non-gravitational forces (outgassing). Measured against JPL Horizons at the committed epochs, the worst heliocentric direction error is 0.22 to 4.6 degrees (Swift-Tuttle 0.22, Halley 0.29, Hale-Bopp 0.66, Vesta 1.44, C67P 2.22, Hygiea 3.12, Pallas 3.57, Juno 4.57) and the worst distance error 0.2% to 2.1% (full table in `docs/small-body-sources.md`).
+
+**Comet tails** are a stylised effect: a stretched billboard pointing away from the Sun, longest near the Sun and absent far from it. It is not a physical dust or ion simulation.
+
+**Frame rate** (measured by `npm run smoke` in a visible Chromium window on the development machine, 2026-09-24): 119.7 fps at the full-system view with 43 bodies and both belts, 120.0 fps near Halley with its tail (the display refresh rate is the cap).
+
+**Hooks** for tests: `window.__solar.beltCounts()`, `setBelts(on)`, `beltsVisible()`, `tailsVisible()`, alongside the existing `flyTo`, `focusId`, `setTime`, `setView`, `setEffects`, `pixelStats`, `litPixels`, `fps` and `labelsShown`.
+
+**Credits.** JPL Small-Body Database and Horizons (`ssd-api.jpl.nasa.gov`); NASA/NSSDC and `science.nasa.gov` pages for radii cross-checks.
+
+**Deferred.** Trojans and resonant populations as separate objects, more named Kuiper objects, a physical dust or ion tail, collisions or belt evolution, image maps for small bodies, parabolic or hyperbolic orbits, non-gravitational comet forces, planetary perturbations of the named objects, GPU-side Kepler propagation, an Oort cloud.
+
 ## Run
 
     npm install

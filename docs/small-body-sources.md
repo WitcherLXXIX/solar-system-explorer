@@ -30,3 +30,38 @@ that epoch the position drifts from reality. SBDB non-gravitational parameters (
 Quaoar (50000), Orcus (90482), Sedna (90377) and Gonggong (225088) were planned but are NOT in the catalog. Their orbital elements
 were fetched and verified twice, but no diameter or radius is published on SBDB, on Horizons, or on `science.nasa.gov`, and a radius
 may not be guessed. The `tno` body kind and its tests remain in the code for a later addition.
+
+## Schematic belts
+
+The two belts are hand-shaped statistical fields, not catalogues: none of the numbers below is fitted to a real population, and the
+points are not individual real objects. Every constant lives in `src/ephemeris/beltField.ts`.
+
+- Main belt (`MAIN_BELT_SPEC`): 4000 points, semi-major axis between 2.1 and 3.3 AU, seed 20260923, eccentricity Rayleigh with scale 0.09
+  capped at 0.3, perihelion at least 1.5 AU, inclination Rayleigh with scale 8 degrees capped at 30. Density (`mainBeltDensity`): 0.4 plus
+  0.6 times a Gaussian centred at 2.75 AU with sigma 0.4, multiplied at each Kirkwood gap (3:1, 5:2, 7:3, 2:1 with Jupiter, computed from
+  Kepler's third law) by 1 minus 0.9 times a Gaussian of sigma 0.02 AU.
+- Kuiper belt (`KUIPER_BELT_SPEC`): 3000 points, semi-major axis between 30 and 50 AU, seed 19300218, eccentricity scale 0.07 capped at
+  0.25, perihelion at least 30 AU, inclination scale 10 degrees capped at 35. Density (`kuiperBeltDensity`): 0.25 floor, plus 0.6 times a
+  smoothstep classical belt (rising 38 to 41 AU, falling 47 to 50 AU), plus 0.5 times a Gaussian of sigma 0.6 AU at the plutino (3:2
+  Neptune) resonance, capped at 1.
+- Angles (node, periapsis, mean anomaly) are uniform.
+
+## Accuracy
+
+Measured 2026-09-24 against JPL Horizons heliocentric ecliptic J2000 vectors at the committed reference epochs
+(`tests/ephemeris/smallBodies.test.ts`; two-body from the SBDB epoch, so error grows away from it). Worst angle in degrees and worst
+relative distance error, with where it occurred:
+
+| id | worst angle (deg) | worst distance ratio |
+|---|---|---|
+| vesta | 1.4395 (JD 2442413.5) | 3.711e-3 |
+| pallas | 3.5682 (JD 2442413.5) | 1.793e-3 |
+| hygiea | 3.1199 (JD 2457023.5) | 1.544e-2 |
+| juno | 4.5719 (JD 2442413.5) | 9.165e-3 |
+| halley | 0.2883 (JD 2451545.0) | 2.114e-2 |
+| halebopp | 0.6554 (JD 2442413.5) | 8.617e-3 |
+| c67p | 2.2237 (JD 2451545.0) | 6.922e-3 |
+| swifttuttle | 0.2153 (JD 2442413.5) | 2.891e-3 |
+
+Pairs worse than 5 degrees or 3% were dropped from the reference set as outside two-body validity. Comets ignore non-gravitational
+forces.
