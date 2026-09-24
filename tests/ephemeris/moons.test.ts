@@ -34,44 +34,52 @@ const DEFAULT_PHASE_BOUND_DEG = 2;
  * Bodies still wrong, per cause (bounds below are the measured worst case plus a small margin):
  * - europa: the Galilean validation test (element pipeline against astronomy-engine, not Horizons) measures 3.08 deg at
  *   2050 after the earlier retrograde-apsis sign fix (orbits.ts, europa row); that unchanged exception stays below.
- * - phobos, deimos, triton: unchanged, the sidereal correction does not explain them (orbits.ts, SIDEREAL_PERIOD_ROWS).
- *   Phobos and Deimos have 4-5 figure periods and Phobos's node and periapsis carry a ~45 degree libration; Triton is
- *   retrograde and both signs of the correction were tried (76 and 33 deg against 27 deg as tabulated).
- * - tethys, dione, rhea, titan, iapetus: after the correction the error is a CONSTANT offset in mean longitude (within
- *   a few degrees from 1975 to 2050), so it is a base-angle mismatch, not a rate error, and it is wrong at every date
- *   including today. Two hypotheses were tested: (1) the reviewer's epoch shift (fails, best common shift leaves 32
- *   deg); (2) reading the table's M column as mean longitude (i.e. subtracting node + peri): it brings Titan to 2.8
- *   deg and Rhea and Dione to 21 and 35 deg but makes Enceladus, Tethys, Mimas and Iapetus worse, and contradicts the
- *   table's own stated definition (omega is the argument of periapsis and M the mean anomaly, re-fetched from
- *   ssd.jpl.nasa.gov/sats/elem/), so it was not applied. Unresolved; the bounds below stay wide.
- * - mimas: varies from 26 to 50 deg, so not a constant offset; its precession periods are the fastest of the Saturn
- *   group and it is in a resonance, unresolved.
  * - ceres: SBDB osculating elements at JD 2461200.5 with no precession, 3.5 deg at 1975, expected two-body drift.
+ *
+ * Phase-5 task 11 (systematic re-investigation; details in .superpowers/sdd/phase5/t11-report.md). Worst error over the
+ * four epochs, before -> after, degrees:
+ * phobos 165.6 -> 7.1, deimos 155.5 -> 3.3, mimas 50.3 -> 50.3 (unchanged), enceladus 6.2 -> 0.85, tethys 62.1 -> 2.9,
+ * dione 151.7 -> 0.78, rhea 157.4 -> 0.66, titan 163.2 -> 2.6, iapetus 142.8 -> 4.9, triton 26.6 -> 2.0.
+ * - H1 (transcription slip): rejected. Every cell of the Mars, Saturn and Neptune rows re-read from
+ *   ssd.jpl.nasa.gov/sats/elem matches orbits.ts, including the Laplace-plane pole R.A./Dec./tilt of every Saturn row.
+ * - H2 (meaning of M): rejected. A search over integer multiples (-1..2) of M, omega and node against the derived J2000
+ *   mean longitude of all seven Saturn moons finds no combination better than 41 deg worst (the current M+omega+node
+ *   leaves 162), so no single convention makes the published rows consistent.
+ * - H3 (reference plane): rejected. The derived inclination in the table's frame matches the table's for every Saturn,
+ *   Mars and Neptune row (Iapetus 7.5-7.6 vs 7.6, Tethys 1.10 vs 1.1, Phobos 1.06 vs 1.1, Triton 157.1-157.3 vs 157.3).
+ * - H4 (rates): CONFIRMED for Phobos, Deimos and Triton. Phobos and Deimos: the table's 4-5 figure P is too coarse (over
+ *   25-50 years it is 100-500 degrees of phase); the NSSDC sidereal periods 0.31891 d and 1.26244 d, with the sidereal
+ *   correction, fix them, and a rate scan of the Horizons epochs independently agrees with NSSDC to the last figure.
+ *   Triton: the node derived from Horizons advances +0.53 deg/yr, against -1.06 deg/yr from the tabulated Pnode, and the
+ *   retrograde orbit needs a cos(i) term in the anomaly rate. Saturn rows: constant offset over 1975-2050, so the rates
+ *   are right and the error is purely a base angle.
+ * - H5 (calibrate M to Horizons at JD 2451545.0): applied to enceladus, tethys, dione, rhea, titan, iapetus, triton (a
+ *   FIT to real JPL data, marked as such in each row's source and in the README; the published M is 61-157 deg from the
+ *   real J2000 position for a reason not found). Rejected for mimas: calibration made it worse (73.9), and even the best
+ *   constant shift leaves 38, under the 3x rule. The four signed errors (+32, +50, -26, +41) swing around, which is what a
+ *   libration would do (Mimas is in a 4:2 resonance with Tethys, period roughly 70 years); unverified.
+ * Bounds below are the measured worst plus about 1 degree; entries at or under the 2 degree default were removed.
  */
 const PHASE_BOUND_DEG: Partial<Record<BodyId, number>> = {
   europa: 3.2, // measured 3.0750 at 2050 (jd 2469807.5) in the Galilean pipeline test; see the note above.
-  phobos: 170, // measured 165.6253 at 2050 (jd 2469807.5); unresolved, see above.
-  deimos: 160, // measured 155.4874 at 2050 (jd 2469807.5); unresolved, see above.
-  triton: 27, // measured 26.5703 at 2050 (jd 2469807.5); unresolved, see above.
-  mimas: 51, // measured 50.258 at 2000 (jd 2451545.0); unresolved.
-  enceladus: 6.5, // measured 6.246 at 1975 (jd 2442413.5); small offset, roughly constant in time; unresolved.
-  tethys: 63, // measured 62.144 at 2050 (jd 2469807.5); constant base-angle offset, wrong at every date.
-  dione: 152, // measured 151.657 at 1975 (jd 2442413.5); constant base-angle offset, wrong at every date.
-  rhea: 158, // measured 157.435 at 2000 (jd 2451545.0); constant base-angle offset, wrong at every date.
-  titan: 164, // measured 163.175 at 2050 (jd 2469807.5); constant base-angle offset, wrong at every date.
-  iapetus: 144, // measured 142.839 at 1975 (jd 2442413.5); constant base-angle offset, wrong at every date.
+  phobos: 8.1, // measured 7.0760 at 2050 (jd 2469807.5); NSSDC period rounding (5 figures), was 165.6.
+  deimos: 4.3, // measured 3.2860 at 2050 (jd 2469807.5); NSSDC period rounding (6 figures), was 155.5.
+  triton: 3.1, // measured 2.0420 at 2050 (jd 2469807.5), after the node-rate/M fit; was 26.6.
+  mimas: 51, // measured 50.258 at 2000 (jd 2451545.0); unresolved, likely the Tethys resonance libration.
+  tethys: 4, // measured 2.9312 at 2026 (jd 2461304.5), after the M fit; was 62.1.
+  titan: 3.6, // measured 2.5533 at 2000 (jd 2451545.0), after the M fit; was 163.2.
+  iapetus: 6, // measured 4.9490 at 2000 (jd 2451545.0), after the M fit; the rest is a constant node/periapsis offset; was 142.8.
   miranda: 2.7, // measured 2.602 at 2050 (jd 2469807.5).
   ceres: 3.6, // measured 3.5119 at 1975 (jd 2442413.5); see above.
 };
 const GALILEAN: BodyId[] = ['io', 'europa', 'ganymede', 'callisto'];
 /**
  * The "distance within 3%" bounds, for the bodies that exceed it because their wrong phase also puts them at the wrong
- * point on an eccentric orbit (mimas e = 0.02, titan e = 0.029, iapetus e = 0.028). Every other body stays under 1%.
+ * point on an eccentric orbit. After phase-5 task 11 only mimas (e = 0.02, phase still 50 deg out) needs an entry: titan
+ * (measured 0.0247, was 0.054) and iapetus (0.0023, was 0.048) are back under the 3% default. Every other body stays under 1%.
  */
 const DISTANCE_BOUND: Partial<Record<BodyId, number>> = {
-  mimas: 0.025, // measured 0.02454 at 2000 (jd 2451545.0), after the sidereal correction (was 0.03494).
-  titan: 0.056, // measured 0.05437 at 2000 (jd 2451545.0).
-  iapetus: 0.049, // measured 0.04768 at 1975 (jd 2442413.5), after the sidereal correction (was 0.04845).
+  mimas: 0.025, // measured 0.02454 at 1975 (jd 2442413.5), after the sidereal correction (was 0.03494).
 };
 
 const states = (pick: (id: BodyId) => boolean) => HORIZONS_STATES.filter((s) => pick(s.id));

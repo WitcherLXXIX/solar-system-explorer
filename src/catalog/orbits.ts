@@ -2,7 +2,7 @@ import type { BodyId } from './bodies';
 import type { PlaneFrame } from '../ephemeris/frames';
 import type { IauRotation } from '../ephemeris/iau';
 import type { OrbitalElements } from '../ephemeris/kepler';
-import { DAYS_PER_YEAR } from '../units';
+import { DAYS_PER_YEAR, DEG } from '../units';
 
 /** Mean orbital elements of one body relative to its parent, with the reference plane they are measured in. */
 export interface ElementSet {
@@ -50,11 +50,26 @@ const URANUS_POLE = { poleRaDeg: 77.311, poleDecDeg: 15.175 }; // Antipode of NS
 const PLUTO_POLE = { poleRaDeg: 132.99, poleDecDeg: -6.16 }; // NSSDC Pluto Fact Sheet, "Positive Pole of Rotation"
 const URANUS_POLE_SOURCE = 'antipode of NASA NSSDC Uranus Fact Sheet (nssdc.gsfc.nasa.gov/planetary/factsheet/uranusfact.html) "North Pole of Rotation" (257.311, -15.175), epoch J2000 -- see task-7 fix2 comment above';
 const PLUTO_POLE_SOURCE = 'NASA NSSDC Pluto Fact Sheet (nssdc.gsfc.nasa.gov/planetary/factsheet/plutofact.html), "Positive Pole of Rotation", epoch J2000';
-const SBDB = 'JPL Small-Body Database API (ssd-api.jpl.nasa.gov/sbdb.api, full-prec=true), osculating elements, J2000 ecliptic';
+/**
+ * Source-string suffix for a row whose mean anomaly was replaced by a value fitted to the real JPL Horizons state at the
+ * table's own epoch (phase-5 task 11, hypothesis H5). The published M places these satellites 61 to 157 degrees from where
+ * Horizons puts them at J2000, and no reading of the table's M, omega and node reproduces the real position (see the
+ * comment above PHASE_BOUND_DEG in tests/ephemeris/moons.test.ts), so this one column is a fit, not the JPL table value.
+ */
+const fittedM = (tableM: number, shiftDeg: number): string =>
+  `mean anomaly calibrated to the Horizons state at JD 2451545.0 (fitted, not the JPL table value ${tableM.toFixed(1)}; shifted ${shiftDeg > 0 ? '+' : ''}${shiftDeg} deg because the published row is that far from the real J2000 position)`;
+const SBDB ='JPL Small-Body Database API (ssd-api.jpl.nasa.gov/sbdb.api, full-prec=true), osculating elements, J2000 ecliptic';
 
 const TABLE: Partial<Record<BodyId, ElementSet>> = {
   // --- Mars (Laplace frame; ephemeris MAR099; ref. Brozović, Jacobson, Park (2025) AJ, 'Revised Ephemerides of the
   // Martian Satellites, Phobos and Deimos') ---
+  // Phase-5 task 11 (H4): the mean-motion column was the whole story for Phobos and Deimos. The table's P (0.3187 d,
+  // 1.2625 d) has 4-5 figures; over 25-50 years that is 100-500 degrees of phase, which is what the 55-166 degree "drift"
+  // was, not node or periapsis libration. The rows now use the independent NASA NSSDC sidereal periods (0.31891 d,
+  // 1.26244 d, the same values as the catalog) with the sidereal-to-anomaly correction (SIDEREAL_PERIOD_ROWS). A scan of
+  // the mean-longitude rate against the four Horizons epochs independently gives 0.318910 d (Phobos, 1.1 deg worst) and
+  // 1.262440 d (Deimos, 0.2 deg worst), i.e. it agrees with NSSDC to the last figure, so this is a sourced fix, not a fit.
+  // Worst error after: Phobos 7.1 deg (was 165.6), Deimos 3.3 deg (was 155.5).
   // Phobos: re-verified this session (2x independent WebFetch re-reads of ssd.jpl.nasa.gov/sats/elem/, both
   // matching these values exactly, including units -- P and Papsis/Pnode are not a units mixup). Kept unchanged
   // after an extensive but unsuccessful attempt to improve on it: Phobos's node/apsidal precession periods
@@ -75,21 +90,21 @@ const TABLE: Partial<Record<BodyId, ElementSet>> = {
     elements: {
       epochJd: SAT_EPOCH_JD,
       aKm: 9375, e: 0.015, iDeg: 1.1, nodeDeg: 169.2, periDeg: 216.3, meanAnomalyDeg: 189.7,
-      meanMotionDegPerDay: 360 / 0.3187,
+      meanMotionDegPerDay: 360 / 0.31891,
       nodeRateDegPerYear: -360 / 2.3, periRateDegPerYear: 360 / 1.1,
     },
-    source: `${SATS_ELEM}, row Phobos (401), ephemeris MAR099, frame Laplace`,
+    source: `${SATS_ELEM}, row Phobos (401), ephemeris MAR099, frame Laplace; sidereal period 0.31891 d from the NASA NSSDC Mars Satellite Fact Sheet (the table's 0.3187 is too coarse), see comment above`,
   },
   deimos: {
     frame: { poleRaDeg: 316.6, poleDecDeg: 53.5 },
     elements: {
       epochJd: SAT_EPOCH_JD,
       aKm: 23457, e: 0.000, iDeg: 1.8, nodeDeg: 54.3, periDeg: 0.0, meanAnomalyDeg: 205.0,
-      meanMotionDegPerDay: 360 / 1.2625,
+      meanMotionDegPerDay: 360 / 1.26244,
       // Papsis printed as 0.0 (e = 0.000, periapsis undefined for a circular orbit): treated as no precession.
       nodeRateDegPerYear: -360 / 56.2, periRateDegPerYear: 0,
     },
-    source: `${SATS_ELEM}, row Deimos (402), ephemeris MAR099, frame Laplace`,
+    source: `${SATS_ELEM}, row Deimos (402), ephemeris MAR099, frame Laplace; sidereal period 1.26244 d from the NASA NSSDC Mars Satellite Fact Sheet (the table's 1.2625 is too coarse)`,
   },
 
   // --- Jupiter (Laplace frame; ephemeris JUP365). Galilean moons are a validation set only: their rendered
@@ -153,6 +168,14 @@ const TABLE: Partial<Record<BodyId, ElementSet>> = {
   },
 
   // --- Saturn (Laplace frame; ephemeris SAT441) ---
+  // Phase-5 task 11 finding, applying to Enceladus, Tethys, Dione, Rhea, Titan and Iapetus below. Every published cell
+  // was re-read from ssd.jpl.nasa.gov/sats/elem (H1: no transcription slip; pole R.A./Dec. also match), the derived
+  // inclination agrees with the table's in this frame (H3: the plane is right), and no sign or multiple of M, omega and
+  // node reproduces the real J2000 longitude across the seven Saturn rows (H2; best combination leaves 41 deg). The
+  // rates are right (the error is constant over 1975-2050, H4). So the published M places these bodies 61-157 degrees
+  // from their real J2000 position for a reason this project could not find, and M is replaced by a fit to the real
+  // Horizons state at JD 2451545.0 (H5), marked as a fit in each source string. That is a fit to real data, not a
+  // JPL table value. Mimas (below) failed the acceptance rule and stays as published.
   // Mimas: re-verified this session (WebFetch re-read of ssd.jpl.nasa.gov/sats/elem/, including the row's position
   // and footnote [36] -> Jacobson 2022 AJ 164:199, ruling out a row-shift/misread; the epoch is 2000-01-01.5 like
   // every other row). Kept unchanged after two separate, unsuccessful investigations, both this session:
@@ -171,6 +194,11 @@ const TABLE: Partial<Record<BodyId, ElementSet>> = {
   // Final-fix wave: both investigations above were run BEFORE the sidereal-period correction (SIDEREAL_PERIOD_ROWS below) and
   // their "rate-precision ceiling" explanation is superseded: Mimas's P is the sidereal period, so its precession was
   // counted twice. After the correction the error is 26-50 deg at the four epochs (was 50-156), still unresolved.
+  // Phase-5 task 11 (H5): calibrating M to the Horizons state at J2000 made Mimas WORSE (worst 73.9 deg against 50.3;
+  // the best constant shift would leave 38 deg, a 1.3x gain, below the 3x acceptance rule), so it was reverted. The signed
+  // error swings +32, +50, -26, +41 deg over 1975-2050, which no fixed base angle or rate can follow. The likely cause is
+  // Mimas's 4:2 mean-motion resonance with Tethys (a libration of the mean longitude with a period of roughly 70 years),
+  // which mean elements cannot represent; this is the physics-side explanation, not something tested here.
   // This is reported as an open, unresolved discrepancy, not papered over: PHASE_BOUND_DEG and a distance-test
   // override are recorded in moons.test.ts with the measured values. See task-7-fix1-report.md.
   mimas: {
@@ -187,17 +215,17 @@ const TABLE: Partial<Record<BodyId, ElementSet>> = {
     frame: { poleRaDeg: 40.6, poleDecDeg: 83.5 },
     elements: {
       epochJd: SAT_EPOCH_JD,
-      aKm: 238400, e: 0.005, iDeg: 0.0, nodeDeg: 0.0, periDeg: 119.5, meanAnomalyDeg: 57.0,
+      aKm: 238400, e: 0.005, iDeg: 0.0, nodeDeg: 0.0, periDeg: 119.5, meanAnomalyDeg: 62.48,
       meanMotionDegPerDay: 360 / 1.370218,
       nodeRateDegPerYear: 0, periRateDegPerYear: 360 / 2.916,
     },
-    source: `${SATS_ELEM}, row Enceladus (602), ephemeris SAT441, frame Laplace`,
+    source: `${SATS_ELEM}, row Enceladus (602), ephemeris SAT441, frame Laplace; ${fittedM(57.0, 5.48)}`,
   },
   tethys: {
     frame: { poleRaDeg: 40.6, poleDecDeg: 83.5 },
     elements: {
       epochJd: SAT_EPOCH_JD,
-      aKm: 295000, e: 0.001, iDeg: 1.1, nodeDeg: 273.0, periDeg: 335.3, meanAnomalyDeg: 0.0,
+      aKm: 295000, e: 0.001, iDeg: 1.1, nodeDeg: 273.0, periDeg: 335.3, meanAnomalyDeg: 298.72,
       meanMotionDegPerDay: 360 / 1.887802,
       // Papsis = 0.005 yr, confirmed verbatim on 3 independent re-fetches (see task-5-report.md), which would give
       // periRateDegPerYear = 360/0.005 = 72,000 deg/yr. Per controller ruling (task-5-report.md, "Controller
@@ -205,52 +233,52 @@ const TABLE: Partial<Record<BodyId, ElementSet>> = {
       // rate -- becomes numerically ill-conditioned as eccentricity approaches zero (a known effect in celestial
       // mechanics), so this is a fit artifact, not a physically meaningful precession; rendering it literally would
       // visibly and implausibly spin Tethys's periapsis every few hours. Set to 0 for rendering purposes. This also
-      // leaves the sidereal-to-anomaly correction (SIDEREAL_PERIOD_ROWS) without a periapsis term for Tethys. Note that
-      // Tethys is 58-62 deg off Horizons at every epoch (a base-angle offset, see moons.test.ts), so this choice is not
-      // what limits its accuracy, but "position accuracy unaffected" would overstate it.
+      // leaves the sidereal-to-anomaly correction (SIDEREAL_PERIOD_ROWS) without a periapsis term for Tethys. Before the
+      // phase-5 M calibration Tethys was 58-62 deg off Horizons at every epoch (a base-angle offset, see moons.test.ts),
+      // so this choice was not what limited its accuracy; it now measures 0.1-2.9 deg.
       nodeRateDegPerYear: -360 / 4.982, periRateDegPerYear: 0,
     },
-    source: `${SATS_ELEM}, row Tethys (603), ephemeris SAT441, frame Laplace`,
+    source: `${SATS_ELEM}, row Tethys (603), ephemeris SAT441, frame Laplace; ${fittedM(0.0, -61.28)}`,
   },
   dione: {
     frame: { poleRaDeg: 40.6, poleDecDeg: 83.5 },
     elements: {
       epochJd: SAT_EPOCH_JD,
-      aKm: 377700, e: 0.002, iDeg: 0.0, nodeDeg: 0.0, periDeg: 116.0, meanAnomalyDeg: 212.0,
+      aKm: 377700, e: 0.002, iDeg: 0.0, nodeDeg: 0.0, periDeg: 116.0, meanAnomalyDeg: 60.86,
       meanMotionDegPerDay: 360 / 2.736916,
       nodeRateDegPerYear: 0, periRateDegPerYear: 360 / 11.698,
     },
-    source: `${SATS_ELEM}, row Dione (604), ephemeris SAT441, frame Laplace`,
+    source: `${SATS_ELEM}, row Dione (604), ephemeris SAT441, frame Laplace; ${fittedM(212.0, -151.14)}`,
   },
   rhea: {
     frame: { poleRaDeg: 40.6, poleDecDeg: 83.5 },
     elements: {
       epochJd: SAT_EPOCH_JD,
-      aKm: 527200, e: 0.001, iDeg: 0.3, nodeDeg: 133.7, periDeg: 44.3, meanAnomalyDeg: 31.5,
+      aKm: 527200, e: 0.001, iDeg: 0.3, nodeDeg: 133.7, periDeg: 44.3, meanAnomalyDeg: 234.06,
       meanMotionDegPerDay: 360 / 4.517503,
       nodeRateDegPerYear: -360 / 35.775, periRateDegPerYear: 360 / 33.939,
     },
-    source: `${SATS_ELEM}, row Rhea (605), ephemeris SAT441, frame Laplace`,
+    source: `${SATS_ELEM}, row Rhea (605), ephemeris SAT441, frame Laplace; ${fittedM(31.5, -157.44)}`,
   },
   titan: {
     frame: { poleRaDeg: 36.4, poleDecDeg: 84.0 },
     elements: {
       epochJd: SAT_EPOCH_JD,
-      aKm: 1221900, e: 0.029, iDeg: 0.3, nodeDeg: 78.6, periDeg: 78.3, meanAnomalyDeg: 11.7,
+      aKm: 1221900, e: 0.029, iDeg: 0.3, nodeDeg: 78.6, periDeg: 78.3, meanAnomalyDeg: 215.03,
       meanMotionDegPerDay: 360 / 15.945448,
       nodeRateDegPerYear: -360 / 687.370, periRateDegPerYear: 360 / 346.680,
     },
-    source: `${SATS_ELEM}, row Titan (606), ephemeris SAT441, frame Laplace`,
+    source: `${SATS_ELEM}, row Titan (606), ephemeris SAT441, frame Laplace; ${fittedM(11.7, -156.67)}`,
   },
   iapetus: {
     frame: { poleRaDeg: 288.7, poleDecDeg: 78.9 },
     elements: {
       epochJd: SAT_EPOCH_JD,
-      aKm: 3561700, e: 0.028, iDeg: 7.6, nodeDeg: 86.5, periDeg: 254.5, meanAnomalyDeg: 74.8,
+      aKm: 3561700, e: 0.028, iDeg: 7.6, nodeDeg: 86.5, periDeg: 254.5, meanAnomalyDeg: 214.77,
       meanMotionDegPerDay: 360 / 79.331002,
       nodeRateDegPerYear: -360 / 3130.302, periRateDegPerYear: 360 / 1662.900,
     },
-    source: `${SATS_ELEM}, row Iapetus (608), ephemeris SAT441, frame Laplace`,
+    source: `${SATS_ELEM}, row Iapetus (608), ephemeris SAT441, frame Laplace; ${fittedM(74.8, 139.97)}`,
   },
 
   // --- Uranus (equatorial frame; ephemeris URA182; ref. Jacobson & Park (2025) AJ 169:65-82, 'The Orbits of
@@ -310,16 +338,25 @@ const TABLE: Partial<Record<BodyId, ElementSet>> = {
   },
 
   // --- Neptune (Laplace frame; ephemeris NEP097) ---
+  // Phase-5 task 11 (H4 + H5) for Triton. Deriving the node from the four Horizons states in this Laplace frame gives a
+  // steady +0.53 deg/yr (163.5, 176.8, 191.0, 203.4 deg in 1975/2000/2026/2050), while the tabulated Pnode of 340.379 yr
+  // read as a regression gives -1.06 deg/yr: the opposite sense and twice the size. The node rate is therefore stored as
+  // +360 / (2 x 340.379) (the derived rate is 360/681.8 yr), and for this retrograde orbit (i = 157.3) the motion along the
+  // orbit is the anomaly rate plus cos(i) times the node rate, so the mean anomaly rate is the NSSDC sidereal period
+  // 5.876854 d minus that term. Worst error 26.6 -> 5.1 deg with these two changes alone; the remaining ~4 deg J2000 base
+  // offset was then removed by fitting M to the Horizons state at JD 2451545.0 (marked as a fit in the source string),
+  // leaving 2.0 deg. The derived node rate is a Horizons-derived value; the factor of two versus the published Pnode is
+  // NOT explained by the source page and is disclosed as such.
   triton: {
     frame: { poleRaDeg: 299.8, poleDecDeg: 43.1 },
     elements: {
       epochJd: SAT_EPOCH_JD,
-      aKm: 354800, e: 0.000, iDeg: 157.3, nodeDeg: 178.1, periDeg: 0.0, meanAnomalyDeg: 63.0,
-      meanMotionDegPerDay: 360 / 5.876994,
+      aKm: 354800, e: 0.000, iDeg: 157.3, nodeDeg: 178.1, periDeg: 0.0, meanAnomalyDeg: 58.95,
+      meanMotionDegPerDay: 360 / 5.876854 - (Math.cos(157.3 * DEG) * (360 / (2 * 340.379))) / DAYS_PER_YEAR,
       // Papsis printed as 0.000 (e = 0.000, periapsis undefined): no precession.
-      nodeRateDegPerYear: -360 / 340.379, periRateDegPerYear: 0,
+      nodeRateDegPerYear: 360 / (2 * 340.379), periRateDegPerYear: 0,
     },
-    source: `${SATS_ELEM}, row Triton (801), ephemeris NEP097, frame Laplace`,
+    source: `${SATS_ELEM}, row Triton (801), ephemeris NEP097, frame Laplace; node rate and mean motion corrected from Horizons (see comment); ${fittedM(63.0, -4.05)}`,
   },
 
   // --- Pluto (equatorial frame; ephemeris PLU060; ref. Brozović & Jacobson (2024) AJ 167:256, 'Post-New Horizons
@@ -392,15 +429,13 @@ const TABLE: Partial<Record<BodyId, ElementSet>> = {
  * the angles, so the mean longitude moves at meanMotion + nodeRate + periRate. For a sidereal P that would count the
  * precession twice, so for these rows the mean-anomaly rate stored is 360/P - (nodeRate + periRate)/365.25.
  * (Before this correction, all Uranus rows and every Saturn row drifted; see final-fix-report.md.)
- * phobos, deimos and triton are deliberately NOT converted. Phobos and Deimos have periods of only 4-5 figures, too
- * coarse to tell the two conventions apart (both miss the catalog period by 5e-5 to 1e-3). Converting them was tried
- * and left the error at 91 deg (Phobos), 131 deg (Deimos) and 76 deg (Triton), against 166, 155 and 27 deg unconverted,
- * so the change does not explain their error. Triton is retrograde; a retrograde-sign variant of the correction
- * (longitude = node - (peri + M)) gave 33 deg, also no better than unconverted. They stay as tabulated and are bounded
- * honestly in moons.test.ts.
+ * Phase-5 task 11: phobos and deimos are now converted too, but only together with the NSSDC sidereal periods (0.31891 d,
+ * 1.26244 d) in place of the table's 4-5 figure P (0.3187, 1.2625). The earlier attempt converted them with the coarse P,
+ * which left 91 and 131 deg; the coarse P, not the convention, was the problem (165.6 -> 7.1 deg for Phobos, 155.5 -> 3.3
+ * deg for Deimos). Triton is retrograde and handled in its own row (node rate and cos(i) term, see the comment there).
  */
 const SIDEREAL_PERIOD_ROWS: readonly BodyId[] = [
-  'mimas', 'enceladus', 'tethys', 'dione', 'rhea', 'titan', 'iapetus',
+  'phobos', 'deimos', 'mimas', 'enceladus', 'tethys', 'dione', 'rhea', 'titan', 'iapetus',
   'miranda', 'ariel', 'umbriel', 'titania', 'oberon',
 ];
 
