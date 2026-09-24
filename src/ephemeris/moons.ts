@@ -1,6 +1,7 @@
 import { GeoMoon, JupiterMoons, MakeTime } from 'astronomy-engine';
 import type { BodyId } from '../catalog/bodies';
-import { ELEMENTS } from '../catalog/orbits';
+import { ELEMENTS, type ElementSet } from '../catalog/orbits';
+import { SMALL_BODY_ELEMENTS } from '../catalog/smallBodyElements';
 import { mulMat3Vec, type Mat3, type Vec3 } from '../math';
 import { AU_M, J2000_JD } from '../units';
 import { EQJ_TO_ECL, planeToEcliptic } from './frames';
@@ -39,15 +40,24 @@ export function aeSatelliteRelative(id: AeSatelliteId, date: Date): Vec3 {
 
 const planeMatrices = new Map<BodyId, Mat3>();
 
-/** Position (ecliptic J2000 metres) relative to the parent from the bundled mean elements (Keplerian motion with secular node and periapsis precession). */
-export function elementRelative(id: BodyId, date: Date): Vec3 {
-  const set = ELEMENTS[id];
+/** The bundled elements of a body: a satellite's mean elements, or a named small body's SBDB osculating elements. */
+export function elementSet(id: BodyId): ElementSet | undefined {
+  return ELEMENTS[id] ?? SMALL_BODY_ELEMENTS[id];
+}
+
+/** Position (ecliptic J2000 metres) relative to the parent at Julian date `jdTdb`, from the bundled elements (Keplerian motion; satellites add secular node and periapsis precession). */
+export function elementRelativeJd(id: BodyId, jdTdb: number): Vec3 {
+  const set = elementSet(id);
   if (!set) throw new Error(`no orbital elements for ${id}`);
   let toEcliptic = planeMatrices.get(id);
   if (!toEcliptic) {
     toEcliptic = planeToEcliptic(set.frame);
     planeMatrices.set(id, toEcliptic);
   }
-  const jdTdb = J2000_JD + MakeTime(date).tt; // Terrestrial Time agrees with TDB to about 2 ms
   return mulMat3Vec(toEcliptic, planePosition(set.elements, jdTdb));
+}
+
+/** As `elementRelativeJd`, at a Date. */
+export function elementRelative(id: BodyId, date: Date): Vec3 {
+  return elementRelativeJd(id, J2000_JD + MakeTime(date).tt); // Terrestrial Time agrees with TDB to about 2 ms
 }

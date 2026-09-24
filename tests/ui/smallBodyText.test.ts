@@ -37,10 +37,10 @@ describe('splitSmallBodies', () => {
   it('separates the small bodies and keeps input order in both lists', () => {
     const list = [
       { id: 'sun', kind: 'star' as const }, { id: 'vesta', kind: 'asteroid' as const }, { id: 'earth', kind: 'planet' as const },
-      { id: 'halley', kind: 'comet' as const }, { id: 'moon', kind: 'moon' as const }, { id: 'sedna', kind: 'tno' as const },
+      { id: 'halley', kind: 'comet' as const }, { id: 'moon', kind: 'moon' as const }, { id: 'pallas', kind: 'tno' as const },
     ];
     const { main, small } = splitSmallBodies(list);
     expect(main.map((b) => b.id)).toEqual(['sun', 'earth', 'moon']);
-    expect(small.map((b) => b.id)).toEqual(['vesta', 'halley', 'sedna']);
+    expect(small.map((b) => b.id)).toEqual(['vesta', 'halley', 'pallas']);
   });
 });

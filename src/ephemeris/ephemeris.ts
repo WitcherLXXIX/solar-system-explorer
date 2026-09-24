@@ -5,10 +5,12 @@ import {
 import { getBody, type BodyId } from '../catalog/bodies';
 import { ROTATIONS } from '../catalog/orbits';
 import { add, rotX, rotZ, type Mat3, type Vec3 } from '../math';
-import { AU_M, DAY_S, DEG } from '../units';
+import { AU_M, DAY_S, DEG, J2000_JD } from '../units';
 import { iauOrientation } from './iau';
 import { assumedOrientation, lockedOrientation, relativeVelocity } from './locked';
-import { aeSatelliteRelative, elementRelative, isAeSatellite } from './moons';
+import { aeSatelliteRelative, elementRelative, elementRelativeJd, isAeSatellite } from './moons';
+import { SMALL_BODY_ELEMENTS } from '../catalog/smallBodyElements';
+import { eccentricSampleDays } from './kepler';
 
 /** Bodies whose heliocentric position astronomy-engine computes directly: the Sun, the planets and Pluto. */
 const AE_HELIO: Partial<Record<BodyId, Body>> = {
@@ -109,11 +111,24 @@ export function orbitalPeriodDays(id: BodyId): number | null {
   return helio !== undefined ? PlanetOrbitalPeriod(helio) : getBody(id).orbitPeriodDays ?? null;
 }
 
-/** `count` positions (xyz triples, metres, relative to the parent) evenly spaced in time over one orbital period from `start`. */
+/**
+ * `count` positions (xyz triples, metres, relative to the parent) over one orbit from `start`. Planets and moons are spaced
+ * evenly in time; a named small body (whose orbit can be very eccentric) is spaced evenly in eccentric anomaly, starting at
+ * its current position, so a comet's orbit line has no long chords at perihelion.
+ */
 export function sampleOrbit(id: BodyId, start: Date, count: number): Float64Array {
   const period = orbitalPeriodDays(id);
   if (period === null) throw new Error(`${id} has no orbit to sample`);
   const out = new Float64Array(count * 3);
+  const small = SMALL_BODY_ELEMENTS[id];
+  if (small) {
+    const el = small.elements;
+    const jd0 = J2000_JD + MakeTime(start).tt;
+    const anomaly = (el.meanAnomalyDeg + el.meanMotionDegPerDay * (jd0 - el.epochJd)) * DEG;
+    const days = eccentricSampleDays(anomaly, el.e, el.meanMotionDegPerDay * DEG, count);
+    for (let k = 0; k < count; k++) out.set(elementRelativeJd(id, jd0 + days[k]!), 3 * k);
+    return out;
+  }
   for (let k = 0; k < count; k++) {
     const date = new Date(start.getTime() + (k / count) * period * DAY_S * 1000);
     out.set(bodyRelativePosition(id, date), 3 * k);

@@ -1,4 +1,5 @@
 import { SATELLITE_BODIES } from './satellites.ts';
+import { SMALL_BODIES } from './smallBodies.ts';
 
 export type BodyId =
   | 'sun' | 'mercury' | 'venus' | 'earth' | 'mars' | 'jupiter' | 'saturn' | 'uranus' | 'neptune'
@@ -6,8 +7,7 @@ export type BodyId =
   | 'mimas' | 'enceladus' | 'tethys' | 'dione' | 'rhea' | 'titan' | 'iapetus'
   | 'miranda' | 'ariel' | 'umbriel' | 'titania' | 'oberon' | 'triton' | 'pluto' | 'charon'
   | 'ceres' | 'eris' | 'haumea' | 'makemake'
-  | 'vesta' | 'pallas' | 'hygiea' | 'juno' | 'quaoar' | 'orcus' | 'sedna' | 'gonggong'
-  | 'halley' | 'halebopp' | 'c67p' | 'swifttuttle';
+  | 'vesta' | 'pallas' | 'hygiea' | 'juno'  | 'halley' | 'halebopp' | 'c67p' | 'swifttuttle';
 
 export type BodyKind = 'star' | 'planet' | 'moon' | 'dwarf' | 'asteroid' | 'tno' | 'comet';
 
@@ -235,8 +235,8 @@ export const CORE_BODIES: readonly BodyData[] = [
   },
 ];
 
-/** Every body in the app: the Sun and planets, then the moons and dwarf planets. Every parent precedes its children. */
-export const BODIES: readonly BodyData[] = [...CORE_BODIES, ...SATELLITE_BODIES];
+/** Every body in the app: the Sun and planets, then the moons and dwarf planets, then the named small bodies. Every parent precedes its children. */
+export const BODIES: readonly BodyData[] = [...CORE_BODIES, ...SATELLITE_BODIES, ...SMALL_BODIES];
 
 export const BODY_IDS: readonly BodyId[] = BODIES.map((b) => b.id);
 

@@ -9,7 +9,7 @@ const DATE = new Date('2026-09-20T12:00:00Z');
 describe('computeFrame', () => {
   it('has an entry for every body with finite numbers', () => {
     const frame = computeFrame(DATE);
-    expect(BODY_IDS).toHaveLength(35);
+    expect(BODY_IDS).toHaveLength(43);
     for (const id of BODY_IDS) {
       const entry = frame[id];
       expect(entry.position.every(Number.isFinite), id).toBe(true);
