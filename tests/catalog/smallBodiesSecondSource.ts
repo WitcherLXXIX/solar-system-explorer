@@ -3,6 +3,7 @@ import type { BodyId } from '../../src/catalog/bodies';
 /**
  * Independent radius (m) for the named small bodies, each with the page it was read from. Radius only: Horizons and NASA
  * periods differ from the SBDB period by more than 0.1% (about 0.2% for Pallas), so they are not used as a period check.
+ * CAVEAT: for vesta, pallas, hygiea and juno the Horizons RAD is the same SBDB diameter halved, so it is NOT independent.
  */
 export const SECOND_SOURCE: Partial<Record<BodyId, { radiusM?: number; orbitPeriodDays?: number; source: string }>> = {
   vesta: { radiusM: 261.385e3, source: 'JPL Horizons OBJ_DATA for 4 Vesta (ssd.jpl.nasa.gov/api/horizons.api), RAD, read 2026-09-23' },

@@ -4,6 +4,7 @@ import {
   tailDirection, tailLengthM, tailZoomFade,
 } from '../../src/render/cometTailMath';
 import { AU_M } from '../../src/units';
+import { REFERENCE_ELEMENTS } from '../catalog/smallBodiesReference';
 
 describe('tailDirection', () => {
   it('points from the Sun through the comet, away from the Sun', () => {
@@ -18,10 +19,10 @@ describe('tailDirection', () => {
 });
 
 describe('tailActivity and tailLengthM', () => {
-  it('is 1 inside 1 AU (Halley at its perihelion, 0.587 AU, is at full strength) and 0 from 4 AU outward', () => {
+  it('is 1 inside 1 AU (Halley at its SBDB perihelion distance, 0.575 AU, is at full strength) and 0 from 4 AU outward', () => {
     expect(TAIL_FULL_AU).toBe(1);
     expect(TAIL_GONE_AU).toBe(4);
-    expect(tailActivity(0.587)).toBe(1);
+    expect(tailActivity(REFERENCE_ELEMENTS.halley!.qAu)).toBe(1);
     expect(tailActivity(1)).toBe(1);
     expect(tailActivity(4)).toBe(0);
     expect(tailActivity(35)).toBe(0);

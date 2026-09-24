@@ -3,7 +3,7 @@ import { orbitalPeriodDays } from '../ephemeris/ephemeris';
 import {
   formatDistance, formatMass, formatPeriodDays, formatRadius, formatTemp,
 } from '../format/format';
-import { SMALL_BODY_NOTE, TAIL_NOTE, dayLengthText, formatGravity, kindLabel, mapNote } from './bodyText';
+import { C67P_NOTE, SMALL_BODY_NOTE, TAIL_NOTE, dayLengthText, formatGravity, kindLabel, mapNote } from './bodyText';
 import { el } from './dom';
 
 export function createInfoPanel(root: HTMLElement): { setBody(id: BodyId): void; update(sunDistanceM: number | null): void } {
@@ -36,7 +36,7 @@ export function createInfoPanel(root: HTMLElement): { setBody(id: BodyId): void;
       heading.textContent = body.name;
       kind.textContent = kindLabel(body.kind, parentName);
       list.replaceChildren();
-      addRow('Radius', formatRadius(body.radiusM), 'Volumetric mean radius');
+      addRow('Radius', formatRadius(body.radiusM), isSmallBodyKind(body.kind) ? 'Half the published diameter (spherical approximation)' : 'Volumetric mean radius');
       addRow('Mass', body.massKg === null ? '—' : formatMass(body.massKg));
       addRow('Orbital period', period === null ? 'n/a' : formatPeriodDays(period), periodNote);
       addRow('Day length', dayLengthText(body.rotationPeriodH), 'Sidereal rotation period');
@@ -46,7 +46,7 @@ export function createInfoPanel(root: HTMLElement): { setBody(id: BodyId): void;
       sunDistanceValue = addRow('Distance from Sun', '');
       foot.textContent = `Source: ${body.source}`;
       mapFoot.textContent = mapNote(body.maps.color !== undefined, body.mapCredit);
-      noteFoot.textContent = body.kind === 'comet' ? `${SMALL_BODY_NOTE} ${TAIL_NOTE}` : isSmallBodyKind(body.kind) ? SMALL_BODY_NOTE : '';
+      noteFoot.textContent = body.id === 'c67p' ? `${SMALL_BODY_NOTE} ${C67P_NOTE} ${TAIL_NOTE}` : body.kind === 'comet' ? `${SMALL_BODY_NOTE} ${TAIL_NOTE}` : isSmallBodyKind(body.kind) ? SMALL_BODY_NOTE : '';
     },
     update(sunDistanceM) {
       if (sunDistanceValue) sunDistanceValue.textContent = sunDistanceM === null ? '—' : formatDistance(sunDistanceM);

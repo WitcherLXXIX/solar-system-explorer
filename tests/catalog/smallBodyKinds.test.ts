@@ -10,7 +10,7 @@ describe('small-body kinds', () => {
     for (const kind of ['asteroid', 'tno', 'comet'] as const) expect(isSmallBodyKind(kind)).toBe(true);
     for (const kind of ['star', 'planet', 'moon', 'dwarf'] as const satisfies readonly BodyKind[]) expect(isSmallBodyKind(kind)).toBe(false);
   });
-  it('starts with an empty element table (Tasks 5 and 6 fill it)', () => {
-    expect(SMALL_BODY_ELEMENTS).toBeDefined();
+  it('has an element table entry for every named small body', () => {
+    expect(Object.keys(SMALL_BODY_ELEMENTS).length).toBe(8);
   });
 });

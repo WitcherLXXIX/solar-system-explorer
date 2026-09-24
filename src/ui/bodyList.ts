@@ -4,7 +4,7 @@ import { el } from './dom';
 
 /**
  * The hierarchical body list: the Sun, planets and dwarf planets at the top level (a chevron expands a body's moons), then a
- * collapsible "Small bodies" group holding the named asteroids, trans-Neptunian objects and comets.
+ * collapsible "Small bodies" group holding the named asteroids and comets (and any trans-Neptunian objects added later).
  */
 export function createBodyList(root: HTMLElement, onSelect: (id: BodyId) => void): { setActive(id: BodyId): void } {
   const { main, small } = splitSmallBodies(BODIES);

@@ -22,9 +22,9 @@ Planet fidelity in this phase: high-resolution surface maps (loaded only for nea
 
 Added: two schematic belts (4000 main-belt points, 3000 Kuiper-belt points, toggled by "Belts"), 8 named small bodies (the asteroids Vesta, Pallas, Hygiea and Juno; the comets Halley, Hale-Bopp, 67P/Churyumov-Gerasimenko and Swift-Tuttle, listed in a collapsible "Small bodies" group), and comet tails. That makes 43 bodies. Quaoar, Orcus, Sedna and Gonggong were planned but dropped because no radius could be sourced (see `docs/small-body-sources.md`).
 
-**The belts are schematic.** They are hand-shaped statistical fields (a hump with Kirkwood gaps; a classical belt with a plutino bump), NOT individual real objects; every tuning constant is listed in `docs/small-body-sources.md`. They fade out when the camera is close to a body.
+**The belts are schematic.** They are hand-shaped statistical fields (a hump with Kirkwood gaps built into the density, too sparse to see at 4000 points; a classical belt with a plutino bump), NOT individual real objects; every tuning constant is listed in `docs/small-body-sources.md`. They fade out when the camera is close to a body.
 
-**Accuracy.** Named bodies are two-body Keplerian from the JPL Small-Body Database epoch: no planetary perturbations, and comets ignore non-gravitational forces (outgassing). Measured against JPL Horizons at the committed epochs, the worst heliocentric direction error is 0.22 to 4.6 degrees (Swift-Tuttle 0.22, Halley 0.29, Hale-Bopp 0.66, Vesta 1.44, C67P 2.22, Hygiea 3.12, Pallas 3.57, Juno 4.57) and the worst distance error 0.2% to 2.1% (full table in `docs/small-body-sources.md`).
+**Accuracy.** Named bodies are two-body Keplerian from the JPL Small-Body Database epoch: no planetary perturbations, and comets ignore non-gravitational forces (outgassing). Measured against JPL Horizons at the committed epochs, the worst heliocentric direction error is 0.22 to 4.6 degrees (Swift-Tuttle 0.22, Halley 0.29, Hale-Bopp 0.66, Vesta 1.44, C67P 2.22, Hygiea 3.12, Pallas 3.57, Juno 4.57) and the worst distance error 0.2% to 2.1% (full table in `docs/small-body-sources.md`). **These figures only cover the comparison dates that stayed inside a 5 degree / 3% ceiling; the pairs that failed were dropped from the check, so they are not a worst case over all dates.** Dropped: Pallas at 2000; Hygiea at 1975, 2000 and 2010; 67P at 1975, 2021, 2026 and 2050. 67P is the weakest case (Jupiter perturbs it strongly) and it is off today: at the app's default date (JD 2461304.5, 2026-09-21) it is about 1.35 degrees and 6.1% in distance from Horizons (4.83 AU drawn against 4.56 AU; one Horizons fetch, recorded in `tests/ephemeris/c67pToday.test.ts`), above the ceiling.
 
 **Comet tails** are a stylised effect: a stretched billboard pointing away from the Sun, longest near the Sun and absent far from it. It is not a physical dust or ion simulation.
 
@@ -32,7 +32,7 @@ Added: two schematic belts (4000 main-belt points, 3000 Kuiper-belt points, togg
 
 **Hooks** for tests: `window.__solar.beltCounts()`, `setBelts(on)`, `beltsVisible()`, `tailsVisible()`, alongside the existing `flyTo`, `focusId`, `setTime`, `setView`, `setEffects`, `pixelStats`, `litPixels`, `fps` and `labelsShown`.
 
-**Credits.** JPL Small-Body Database and Horizons (`ssd-api.jpl.nasa.gov`); NASA/NSSDC and `science.nasa.gov` pages for radii cross-checks.
+**Credits.** JPL Small-Body Database and Horizons (`ssd-api.jpl.nasa.gov`); NASA/NSSDC and `science.nasa.gov` pages for radii cross-checks. For the four asteroids the radius "second source" (Horizons `RAD`) is the same SBDB diameter halved, so it is not an independent check.
 
 **Deferred.** Trojans and resonant populations as separate objects, more named Kuiper objects, a physical dust or ion tail, collisions or belt evolution, image maps for small bodies, parabolic or hyperbolic orbits, non-gravitational comet forces, planetary perturbations of the named objects, GPU-side Kepler propagation, an Oort cloud.
 

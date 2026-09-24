@@ -27,7 +27,7 @@ export function formatGravity(metresPerSecondSquared: number): string {
   return `${metresPerSecondSquared.toPrecision(3)} m/s²`;
 }
 
-/** The info panel's day-length value: a dash when the spin is unknown (comets and some trans-Neptunian objects), never NaN. */
+/** The info panel's day-length value: a dash when the spin is unknown (Halley, Hale-Bopp and Swift-Tuttle have none published), never NaN. */
 export function dayLengthText(rotationPeriodH: number | null): string {
   return rotationPeriodH === null ? '—' : formatHours(rotationPeriodH);
 }
@@ -38,5 +38,8 @@ export const SMALL_BODY_NOTE = 'Orbit: JPL Small-Body Database osculating elemen
 /** Shown for comets: the tail is an effect, not physics. */
 export const TAIL_NOTE = 'Tail: a stylised effect that always points away from the Sun and is longest near the Sun; it is not a physical simulation.';
 
+/** Shown for 67P only: its two-body position is measurably off today. */
+export const C67P_NOTE = 'Accuracy: Jupiter perturbs this orbit strongly; against JPL Horizons the position drawn today is off by about 1.4 degrees and 6% in distance.';
+
 /** What the belts are: shown as the Belts toggle's tooltip and in the footer. */
-export const BELT_NOTE = 'The asteroid and Kuiper belts are schematic: thousands of statistically placed points that orbit in real time, not individual real objects. The named asteroids, Kuiper objects and comets are real.';
+export const BELT_NOTE = 'The asteroid and Kuiper belts are schematic: thousands of statistically placed points that orbit in real time, not individual real objects. The named asteroids, dwarf planets and comets are real.';

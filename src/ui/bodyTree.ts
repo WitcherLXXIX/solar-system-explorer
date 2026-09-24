@@ -55,7 +55,7 @@ export function visibleRows<Id extends string>(tree: readonly TreeNode<Id>[], ex
   return rows;
 }
 
-/** Splits off the named small bodies (asteroids, trans-Neptunian objects, comets), which the body list shows in their own group. Order is kept. */
+/** Splits off the named small bodies (asteroids, comets and any trans-Neptunian objects added later), which the body list shows in their own group. Order is kept. */
 export function splitSmallBodies<T extends { kind: TreeKind }>(bodies: readonly T[]): { main: T[]; small: T[] } {
   return { main: bodies.filter((b) => !isSmallBodyKind(b.kind)), small: bodies.filter((b) => isSmallBodyKind(b.kind)) };
 }

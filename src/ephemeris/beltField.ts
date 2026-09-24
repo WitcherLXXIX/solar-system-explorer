@@ -116,7 +116,7 @@ export function generateBelt(spec: BeltSpec, gm: number = SUN_GM_M3_S2): BeltFie
       if (rand() < spec.density(a)) break;
     }
     const eLimit = Math.min(spec.eccentricityMax, Math.max(0, 1 - spec.qMinAu / a));
-    let e = eLimit;
+    let e = eLimit * rand();
     for (let tries = 0; tries < 50; tries++) {
       const candidate = rayleigh(rand(), spec.eccentricitySigma);
       if (candidate <= eLimit) {

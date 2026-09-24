@@ -3,7 +3,7 @@
 Mirrors the pattern of `docs/texture-sources.md`: every stored fact is listed with where it was read. Elements are osculating and
 propagated two-body from the SBDB epoch (no planetary perturbations, no precession). All values read 2026-09-23 from the
 JPL Small-Body Database API (`https://ssd-api.jpl.nasa.gov/sbdb.api?sstr=<string>&phys-par=1&full-prec=1`), each fetched twice and
-compared digit for digit. Radius is half the SBDB `diameter`. Second sources check the radius only: Horizons and NASA periods
+compared digit for digit. Radius is half the SBDB `diameter`. Caveat: for Vesta, Pallas, Hygiea and Juno the second source (Horizons OBJ_DATA `RAD`) is derived from the same SBDB diameter (the values match digit for digit), so it is NOT an independent check and cannot catch a wrong SBDB diameter; only the comets' `science.nasa.gov` sizes are independent. Second sources check the radius only: Horizons and NASA periods
 differ from the SBDB period by more than 0.1% (about 0.2% for Pallas), so they are not used as a period check. Mass is
 `GM * 1e9 / G` where SBDB publishes a GM; otherwise mass and surface gravity are null.
 
@@ -29,7 +29,7 @@ that epoch the position drifts from reality. SBDB non-gravitational parameters (
 
 Quaoar (50000), Orcus (90482), Sedna (90377) and Gonggong (225088) were planned but are NOT in the catalog. Their orbital elements
 were fetched and verified twice, but no diameter or radius is published on SBDB, on Horizons, or on `science.nasa.gov`, and a radius
-may not be guessed. The `tno` body kind and its tests remain in the code for a later addition.
+may not be guessed. The `tno` body kind remains in the code (unused) for a later addition.
 
 ## Schematic belts
 
@@ -63,5 +63,9 @@ relative distance error, with where it occurred:
 | c67p | 2.2237 (JD 2451545.0) | 6.922e-3 |
 | swifttuttle | 0.2153 (JD 2442413.5) | 2.891e-3 |
 
-Pairs worse than 5 degrees or 3% were dropped from the reference set as outside two-body validity. Comets ignore non-gravitational
-forces.
+Pairs worse than 5 degrees or 3% were dropped from the reference set as outside two-body validity, so the table above is the worst
+case over the KEPT pairs only, not over all dates. Dropped pairs (task-7 report): pallas JD 2451545.0 (2000); hygiea 2442413.5, 2451545.0 and
+2455197.5 (1975, 2000, 2010); c67p 2442413.5, 2461304.5, 2469807.5 and 2459215.5 (1975, 2026, 2050, 2021). The measured size of the
+failures was not recorded except for 67P today (JD 2461304.5, 2026-09-21, the app's default date): 1.35 degrees and 6.1% in distance
+(4.83 AU modelled, 4.56 AU Horizons), above the 3% ceiling (one fetch; `tests/ephemeris/c67pToday.test.ts`). The stored 67P elements
+are SBDB's current ones (epoch 2457305.5, 2015). Comets ignore non-gravitational forces.

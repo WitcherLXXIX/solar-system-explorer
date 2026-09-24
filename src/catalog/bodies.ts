@@ -11,7 +11,7 @@ export type BodyId =
 
 export type BodyKind = 'star' | 'planet' | 'moon' | 'dwarf' | 'asteroid' | 'tno' | 'comet';
 
-/** The kinds phase 3 adds: named asteroids, trans-Neptunian objects and comets. */
+/** The kinds phase 3 adds: named asteroids and comets (`tno` is unused until a Kuiper object with a published radius is added). */
 export const SMALL_BODY_KINDS: readonly BodyKind[] = ['asteroid', 'tno', 'comet'];
 export function isSmallBodyKind(kind: BodyKind): boolean {
   return SMALL_BODY_KINDS.includes(kind);

@@ -10,5 +10,5 @@ export const DAYS_PER_YEAR = 365.25;
 /** Newtonian constant of gravitation, m^3 kg^-1 s^-2 (CODATA 2018). */
 export const G = 6.6743e-11;
 
-/** Sun gravitational parameter GM, m^3 s^-2 (IAU 2015 nominal value). */
+/** Sun gravitational parameter GM, m^3 s^-2 (1.32712440018e20, the IERS/DE405-era value; the IAU 2015 nominal is 1.3271244e20, a relative difference of about 1e-10). */
 export const SUN_GM_M3_S2 = 1.32712440018e20;
