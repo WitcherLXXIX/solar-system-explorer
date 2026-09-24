@@ -10,6 +10,8 @@ import { RING_FRAG } from '../../src/render/rings';
 import { SURFACE_FRAG } from '../../src/render/surfaceMaterial';
 import { CLOUD_FRAG } from '../../src/render/clouds';
 import { SOFT_LAMBERT_GLSL } from '../../src/render/terminatorMath';
+import { MAX_OCCLUDERS, MIN_SHADOW_WIDTH } from '../../src/render/bodyShadowMath';
+import { BODY_SHADOW_GLSL } from '../../src/render/bodyShadows';
 
 /** Pulls the numbers out of a GLSL expression with a regular expression and fails loudly if the expression is gone. */
 function grab(source: string, pattern: RegExp): number[] {
@@ -65,5 +67,18 @@ describe('the soft terminator is used by the surface and cloud shaders', () => {
   it('the cloud shader includes it too', () => {
     expect(CLOUD_FRAG).toContain(SOFT_LAMBERT_GLSL);
     expect(CLOUD_FRAG).toMatch(/softLambert\(dot\(normalize\(vNormalW\), uSunDir\)\)/);
+  });
+});
+
+describe('the surface shader body-shadow block mirrors bodyShadowMath', () => {
+  it('includes the shared GLSL and multiplies the diffuse term by the body shadow', () => {
+    expect(SURFACE_FRAG).toContain(BODY_SHADOW_GLSL);
+    expect(SURFACE_FRAG).toMatch(/float diffuse = softLambert\(ndl\) \* shadow \* bodyShadow;/);
+  });
+  it('uses the same minimum penumbra width', () => {
+    expect(grab(BODY_SHADOW_GLSL, /const float MIN_W = ([\d.e-]+);/)).toEqual([MIN_SHADOW_WIDTH]);
+  });
+  it('loops over MAX_OCCLUDERS occluders', () => {
+    expect(grab(BODY_SHADOW_GLSL, /const int MAX_OCC = (\d+);/)).toEqual([MAX_OCCLUDERS]);
   });
 });

@@ -4,6 +4,8 @@ import type { FrameEntry } from '../ephemeris/frame';
 import type { Vec3 } from '../math';
 import { AtmosphereEffect } from './atmosphere';
 import { SPRITE_THRESHOLD_PX, apparentDiameterPx, toRenderSpace } from './cameraRelative';
+import { selectOccluders, type Occluder } from './bodyShadowMath';
+import { SUN_RADIUS_M, type ShadowCaster } from './bodyShadows';
 import { CloudEffect } from './clouds';
 import { CometTailEffect } from './cometTail';
 import { getDotTexture } from './dotTexture';
@@ -66,6 +68,8 @@ export interface BodyUpdateContext {
   hiRes: boolean;
   effectsEnabled: boolean;
   nearM: number;
+  /** Bodies whose shadow may fall on this one, camera-relative. */
+  casters: readonly ShadowCaster[];
 }
 
 const farGeometry = new THREE.SphereGeometry(1, 128, 96);
@@ -94,6 +98,7 @@ export class BodyView {
   private readonly sunLocal = new THREE.Vector3();
   private readonly camLocal = new THREE.Vector3();
   private readonly inverseQuat = new THREE.Quaternion();
+  private readonly scratch = new THREE.Vector3();
 
   constructor(
     private readonly data: BodyData,
@@ -202,7 +207,10 @@ export class BodyView {
       sunLocal: this.sunLocal, camLocal: this.camLocal, screenDiameterPx, asSphere,
       effectsEnabled: ctx.effectsEnabled, hiRes: ctx.hiRes, nearM: ctx.nearM, sunDistanceM,
     };
-    if (asSphere) this.updateSurface(state);
+    if (asSphere) {
+      this.updateSurface(state);
+      this.updateShadows(state, rel, ctx.casters);
+    }
     for (const effect of this.effects) effect.update(state);
     return { rel, distanceM, screenDiameterPx };
   }
@@ -216,6 +224,31 @@ export class BodyView {
     if (maps.color) this.textures.get(id, 'color', maps.color, false);
     if (maps.night) this.textures.get(id, 'night', maps.night, false);
     if (maps.clouds) this.textures.get(id, 'clouds', maps.clouds, false);
+  }
+
+  /** Chooses up to MAX_OCCLUDERS family bodies that can shadow this one and writes them, in this body's radii and local axes, to the shader. */
+  private updateShadows(state: BodyRenderState, rel: Vec3, casters: readonly ShadowCaster[]): void {
+    const u = this.surface.uniforms;
+    if (!state.effectsEnabled || isStarKind(this.data.kind) || casters.length === 0) {
+      u.uOccCount.value = 0;
+      return;
+    }
+    const radius = this.data.radiusM;
+    const tanSun = SUN_RADIUS_M / state.sunDistanceM;
+    const candidates: Occluder[] = casters.map((c) => {
+      // Float64 difference first, then to this body's radii and local axes.
+      this.scratch.set((c.rel[0] - rel[0]) / radius, (c.rel[1] - rel[1]) / radius, (c.rel[2] - rel[2]) / radius).applyQuaternion(this.inverseQuat);
+      return { position: [this.scratch.x, this.scratch.y, this.scratch.z], radius: c.radiusM / radius };
+    });
+    const chosen = selectOccluders(candidates, [state.sunLocal.x, state.sunLocal.y, state.sunLocal.z], tanSun);
+    const positions = u.uOccPos.value as THREE.Vector3[];
+    const radii = u.uOccRadius.value as number[];
+    chosen.forEach((o, i) => {
+      positions[i]!.set(o.position[0], o.position[1], o.position[2]);
+      radii[i] = o.radius;
+    });
+    u.uOccCount.value = chosen.length;
+    u.uTanSun.value = tanSun;
   }
 
   private updateSurface(state: BodyRenderState): void {

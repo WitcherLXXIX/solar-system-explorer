@@ -3,6 +3,8 @@ import {
   CLOUD_NIGHT_DIMMING, FRESNEL_EXPONENT, FRESNEL_F0, NIGHT_EDGE_HI, NIGHT_EDGE_LO, WATER_BLUE_HI, WATER_BLUE_LO,
   WATER_LUMINANCE_HI, WATER_LUMINANCE_LO,
 } from './earthMath';
+import { MAX_OCCLUDERS } from './bodyShadowMath';
+import { BODY_SHADOW_GLSL } from './bodyShadows';
 import { glslFloat } from './glsl';
 import { RING_SHADOW_STRENGTH } from './ringMath';
 import { SOFT_LAMBERT_GLSL } from './terminatorMath';
@@ -59,6 +61,7 @@ varying vec3 vNormalW;
 varying vec3 vPosB;
 varying vec3 vPosW;
 ${SOFT_LAMBERT_GLSL}
+${BODY_SHADOW_GLSL}
 void main() {
   vec3 albedo = mix(uColor, texture2D(uMap, vUv).rgb, uHasMap);
   vec3 N = normalize(vNormalW);
@@ -75,7 +78,8 @@ void main() {
         if (u > 0.0 && u < 1.0) shadow = 1.0 - ${glslFloat(RING_SHADOW_STRENGTH)} * textureLod(uRingAlpha, vec2(u, 0.5), 0.0).a;
       }
     }
-    float diffuse = softLambert(ndl) * shadow;
+    float bodyShadow = bodyShadowFactor(vPosB, uSunLocal);
+    float diffuse = softLambert(ndl) * shadow * bodyShadow;
     lit = albedo * (diffuse + 0.04 / PI);
     // Night lights blend in across a soft terminator and are dimmed by cloud cover (mirrors earthMath.nightFactor).
     // Cloud coverage is sampled once, outside the branches, and reused for the dimming and the glint suppression.
@@ -123,6 +127,10 @@ export function createSurfaceMaterial(colorHex: string, unlit: boolean): THREE.S
       uRingAlpha: { value: white },
       uGlint: { value: 0 },
       uShine: { value: 40 },
+      uOccCount: { value: 0 },
+      uOccPos: { value: Array.from({ length: MAX_OCCLUDERS }, () => new THREE.Vector3()) },
+      uOccRadius: { value: new Array<number>(MAX_OCCLUDERS).fill(0) },
+      uTanSun: { value: 0 },
     },
   });
 }

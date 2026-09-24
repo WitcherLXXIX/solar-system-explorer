@@ -9,6 +9,7 @@ import { BeltPoints } from './beltPoints';
 import { HeliosphereEffect } from './heliosphere';
 import { heliosphereOpacity } from './heliosphereMath';
 import { BodyView, type RenderInfo } from './bodyView';
+import { casterEntries } from './bodyShadows';
 import { FAR_M, SPRITE_THRESHOLD_PX, nearPlane, orbitLineOpacity, toRenderSpace } from './cameraRelative';
 import { HI_RES_BUDGET, chooseHiRes, wantsHiTexture, type HiResCandidate } from './lod';
 import { OrbitLine } from './orbitLine';
@@ -157,12 +158,16 @@ export class SolarScene {
 
     // Pass 2: update and draw.
     const info = new Map<BodyId, RenderInfo>();
+    // Camera-relative positions of every body in float64, for the shadow casters of each family.
+    const rels = new Map<BodyId, Vec3>();
+    for (const body of BODIES) rels.set(body.id, toRenderSpace(input.frame[body.id].position, input.cameraPos));
     for (const body of BODIES) {
       const entry = input.frame[body.id];
       const view = this.views.get(body.id)!;
       const result = view.update(entry, {
         cameraPos: input.cameraPos, sunPos, sunRel, fovYRad: this.fovYRad, viewportHeightPx: this.height,
         hiRes: this.granted.has(body.id), effectsEnabled: this.effectsEnabled, nearM: this.camera.near,
+        casters: casterEntries(body.id, rels),
       });
       info.set(body.id, result);
       const parent = body.parent === null ? null : info.get(body.parent) ?? null; // parents come first in BODIES
@@ -226,6 +231,22 @@ export class SolarScene {
       if (buffer[i]! + buffer[i + 1]! + buffer[i + 2]! > 30) lit++;
     }
     return lit;
+  }
+
+  /** Renders once more and returns the mean of (r+g+b)/3, 0..255, over a 64x64 patch at the centre (for the smoke test). */
+  centreMeanLuma(): number {
+    if (!this.lastInput) return 0;
+    this.render(this.lastInput);
+    const gl = this.renderer.getContext();
+    const size = 64;
+    const buffer = new Uint8Array(size * size * 4);
+    gl.readPixels(
+      Math.floor((gl.drawingBufferWidth - size) / 2), Math.floor((gl.drawingBufferHeight - size) / 2),
+      size, size, gl.RGBA, gl.UNSIGNED_BYTE, buffer,
+    );
+    let sum = 0;
+    for (let i = 0; i < buffer.length; i += 4) sum += (buffer[i]! + buffer[i + 1]! + buffer[i + 2]!) / 3;
+    return sum / (size * size);
   }
 
   /** Renders once more and counts lit, warm and blue pixels over the whole frame (for the smoke test). */

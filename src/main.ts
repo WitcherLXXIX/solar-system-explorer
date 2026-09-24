@@ -155,6 +155,7 @@ declare global {
     __solar?: {
       frames: number;
       litPixels(): number;
+      meanLuma(): number;
       altitudeM(): number;
       isFlying(): boolean;
       focusId(): BodyId;
@@ -185,6 +186,7 @@ window.__solar = {
     return frames;
   },
   litPixels: () => scene.centreLitPixels(),
+  meanLuma: () => scene.centreMeanLuma(),
   altitudeM: () => (lastInput ? lastInput.altitudeM : 0),
   isFlying: () => camera.isFlying,
   focusId: () => camera.displayId,
