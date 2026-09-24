@@ -16,9 +16,10 @@ const elements = (id: BodyId) => SMALL_BODY_ELEMENTS[id]!.elements;
 const angleDeg = (a: Vec3, b: Vec3): number => Math.acos(Math.min(1, Math.max(-1, dot(a, b) / (length(a) * length(b))))) / DEG;
 
 describe('the catalog with the small bodies joined', () => {
-  it('has 43 bodies with every parent before its children and the eight small bodies last', () => {
-    expect(BODIES).toHaveLength(43);
-    expect(BODIES.slice(-IDS.length).map((b) => b.id)).toEqual(IDS);
+  it('has 55 bodies with every parent before its children, the eight small bodies after the 35 older ones and the twelve stars last', () => {
+    expect(BODIES).toHaveLength(55);
+    expect(BODIES.slice(35, 43).map((b) => b.id)).toEqual(IDS);
+    expect(BODIES.slice(43).every((b) => b.kind === 'nearstar')).toBe(true);
     expect(IDS).toHaveLength(8);
     const seen = new Set<BodyId>();
     for (const b of BODIES) {

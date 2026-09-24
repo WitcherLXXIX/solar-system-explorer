@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import type { BodyData } from '../catalog/bodies';
+import { isStarKind, type BodyData } from '../catalog/bodies';
 import type { FrameEntry } from '../ephemeris/frame';
 import type { Vec3 } from '../math';
 import { AtmosphereEffect } from './atmosphere';
@@ -97,7 +97,7 @@ export class BodyView {
     private readonly textures: TextureManager,
   ) {
     this.hasHiRes = data.maps.color?.hi !== undefined;
-    this.surface = createSurfaceMaterial(data.color, data.kind === 'star');
+    this.surface = createSurfaceMaterial(data.color, isStarKind(data.kind));
     this.mesh = new THREE.Mesh(farGeometry, this.surface);
     this.mesh.scale.setScalar(data.radiusM);
     this.mesh.frustumCulled = false;

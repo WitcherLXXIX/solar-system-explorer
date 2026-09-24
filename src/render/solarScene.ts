@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { BODIES, type BodyId } from '../catalog/bodies';
+import { BODIES, isStarKind, type BodyId } from '../catalog/bodies';
 import type { Frame } from '../ephemeris/frame';
 import { length, sub, type Vec3 } from '../math';
 import { DEG } from '../units';
@@ -54,7 +54,7 @@ export class SolarScene {
       const view = new BodyView(body, this.textures);
       this.views.set(body.id, view);
       this.scene.add(...view.objects);
-      if (body.kind !== 'star') {
+      if (!isStarKind(body.kind)) {
         const orbit = new OrbitLine(body.id, body.color);
         this.orbits.set(body.id, orbit);
         this.scene.add(orbit.line);

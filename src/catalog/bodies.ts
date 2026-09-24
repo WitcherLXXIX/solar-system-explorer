@@ -1,5 +1,6 @@
 import { SATELLITE_BODIES } from './satellites.ts';
 import { SMALL_BODIES } from './smallBodies.ts';
+import { NEARBY_STAR_BODIES } from './stars.ts';
 
 export type BodyId =
   | 'sun' | 'mercury' | 'venus' | 'earth' | 'mars' | 'jupiter' | 'saturn' | 'uranus' | 'neptune'
@@ -244,7 +245,7 @@ export const CORE_BODIES: readonly BodyData[] = [
 ];
 
 /** Every body in the app: the Sun and planets, then the moons and dwarf planets, then the named small bodies. Every parent precedes its children. */
-export const BODIES: readonly BodyData[] = [...CORE_BODIES, ...SATELLITE_BODIES, ...SMALL_BODIES];
+export const BODIES: readonly BodyData[] = [...CORE_BODIES, ...SATELLITE_BODIES, ...SMALL_BODIES, ...NEARBY_STAR_BODIES];
 
 export const BODY_IDS: readonly BodyId[] = BODIES.map((b) => b.id);
 

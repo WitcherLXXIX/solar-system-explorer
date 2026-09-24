@@ -3,13 +3,31 @@ import { BODIES, BODY_IDS, getBody } from '../../src/catalog/bodies';
 import { bodyPosition } from '../../src/ephemeris/ephemeris';
 import { computeFrame } from '../../src/ephemeris/frame';
 import { length, sub } from '../../src/math';
+import { LIGHT_YEAR_M } from '../../src/units';
 
 const DATE = new Date('2026-09-20T12:00:00Z');
 
 describe('computeFrame', () => {
+  it('puts every star at its fixed catalog position: 4.2465 to 11.4039 ly from the Sun, and the same at 1700, 2026 and 2300', () => {
+    const stars = BODIES.filter((b) => b.kind === 'nearstar');
+    expect(stars).toHaveLength(12);
+    const early = computeFrame(new Date('1700-01-01T00:00:00Z'));
+    const now = computeFrame(DATE);
+    const late = computeFrame(new Date('2300-12-31T00:00:00Z'));
+    for (const star of stars) {
+      const distanceLy = length(now[star.id].position) / LIGHT_YEAR_M;
+      expect(distanceLy, star.id).toBeGreaterThan(4.24);
+      expect(distanceLy, star.id).toBeLessThan(11.41);
+      expect(early[star.id].position, star.id).toEqual(now[star.id].position);
+      expect(late[star.id].position, star.id).toEqual(now[star.id].position);
+      expect(now[star.id].orientation.every((axis) => axis.every(Number.isFinite)), star.id).toBe(true);
+    }
+    expect(length(now.proxima.position) / LIGHT_YEAR_M).toBeCloseTo(4.2465, 9);
+    expect(length(now.cygni61a.position) / LIGHT_YEAR_M).toBeCloseTo(11.4039, 9);
+  });
   it('has an entry for every body with finite numbers', () => {
     const frame = computeFrame(DATE);
-    expect(BODY_IDS).toHaveLength(43);
+    expect(BODY_IDS).toHaveLength(55);
     for (const id of BODY_IDS) {
       const entry = frame[id];
       expect(entry.position.every(Number.isFinite), id).toBe(true);

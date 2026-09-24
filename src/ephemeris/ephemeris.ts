@@ -3,6 +3,7 @@ import {
   RotationAxis, SiderealTime, Vector,
 } from 'astronomy-engine';
 import { getBody, type BodyId } from '../catalog/bodies';
+import { NEARBY_STARS } from '../catalog/stars';
 import { ROTATIONS } from '../catalog/orbits';
 import { add, rotX, rotZ, type Mat3, type Vec3 } from '../math';
 import { AU_M, DAY_S, DEG, J2000_JD } from '../units';
@@ -11,6 +12,7 @@ import { assumedOrientation, lockedOrientation, relativeVelocity } from './locke
 import { aeSatelliteRelative, elementRelative, elementRelativeJd, isAeSatellite } from './moons';
 import { SMALL_BODY_ELEMENTS } from '../catalog/smallBodyElements';
 import { eccentricSampleDays } from './kepler';
+import { nearbyStarPositionM } from './starPosition';
 
 /** Bodies whose heliocentric position astronomy-engine computes directly: the Sun, the planets and Pluto. */
 const AE_HELIO: Partial<Record<BodyId, Body>> = {
@@ -31,8 +33,13 @@ const AE_ROTATION: Partial<Record<BodyId, Body>> = { ...AE_HELIO, moon: Body.Moo
 
 const EQJ_TO_ECL = Rotation_EQJ_ECL();
 
-/** Position in metres relative to the body's parent (ecliptic J2000). The Sun is the origin; planets and dwarf planets are heliocentric. */
+/** The stars never move, so each one's ecliptic position is computed once. */
+const STAR_POSITIONS = new Map<BodyId, Vec3>(NEARBY_STARS.map((s) => [s.id, nearbyStarPositionM(s)]));
+
+/** Position in metres relative to the body's parent (ecliptic J2000). A nearby star's position is its fixed catalog position (its parent is null). The Sun is the origin; planets and dwarf planets are heliocentric. */
 export function bodyRelativePosition(id: BodyId, date: Date): Vec3 {
+  const star = STAR_POSITIONS.get(id);
+  if (star !== undefined) return [star[0], star[1], star[2]];
   const helio = AE_HELIO[id];
   if (helio !== undefined) {
     const v = RotateVector(EQJ_TO_ECL, HelioVector(helio, date));
