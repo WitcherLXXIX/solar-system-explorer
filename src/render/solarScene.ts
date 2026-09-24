@@ -14,6 +14,7 @@ import { FAR_M, SPRITE_THRESHOLD_PX, nearPlane, orbitLineOpacity, toRenderSpace 
 import { HI_RES_BUDGET, chooseHiRes, wantsHiTexture, type HiResCandidate } from './lod';
 import { OrbitLine } from './orbitLine';
 import { beltOpacity, moonOrbitOpacity, spriteHiddenByParent } from './orbitFade';
+import { SkyStarPoints } from './skyStarPoints';
 import { SPRITE_MIN_SIZE_PX } from './sprite';
 import { classifyPixel } from './pixelStats';
 import { TextureManager } from './textureManager';
@@ -32,6 +33,7 @@ export interface FrameInput {
   showOrbits: boolean;
   showBelts: boolean;
   showDeepSpace: boolean;
+  showNightSky: boolean;
 }
 
 export class SolarScene {
@@ -51,6 +53,7 @@ export class SolarScene {
   private readonly kuiperBelt = new BeltPoints(generateBelt(KUIPER_BELT_SPEC), '#8fa8c8', 2);
   private readonly oort = new BeltPoints(generateOortCloud(), '#9db8d8', 1.5);
   private readonly heliosphere = new HeliosphereEffect();
+  private readonly sky = new SkyStarPoints();
 
   constructor(canvas: HTMLCanvasElement, startDate: Date) {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, logarithmicDepthBuffer: true });
@@ -67,7 +70,7 @@ export class SolarScene {
         this.scene.add(orbit.line);
       }
     }
-    this.scene.add(this.mainBelt.points, this.kuiperBelt.points, this.oort.points, ...this.heliosphere.objects);
+    this.scene.add(this.mainBelt.points, this.kuiperBelt.points, this.oort.points, ...this.heliosphere.objects, this.sky.points);
   }
 
   get fovYRad(): number {
@@ -125,6 +128,7 @@ export class SolarScene {
     this.width = Math.max(1, width);
     this.height = Math.max(1, height);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // re-read: the window can move between displays
+    this.sky.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.setSize(this.width, this.height, false);
     this.camera.aspect = this.width / this.height;
     this.camera.updateProjectionMatrix();
@@ -201,8 +205,14 @@ export class SolarScene {
     const deep = input.showDeepSpace ? 1 : 0;
     this.oort.update(input.date, input.cameraPos, deep * oortOpacity(input.altitudeM));
     this.heliosphere.update(sunRel, deep * heliosphereOpacity(input.altitudeM), this.camera.near);
+    this.sky.update(input.showNightSky ? 1 : 0);
     this.renderer.render(this.scene, this.camera);
     return info;
+  }
+
+  /** The night-sky layer's point count and whether it was drawn in the last frame. */
+  skyState(): { points: number; visible: boolean } {
+    return { points: this.sky.count, visible: this.sky.visible };
   }
 
   /** CSS-pixel screen position of a camera-relative point (Three.js axes). */

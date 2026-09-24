@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_MAP_CREDIT, DEEP_SPACE_NOTE, STAR_NOTE, deepSpaceCaption, formatGravity, kindLabel, mapNote } from '../../src/ui/bodyText';
+import { DEFAULT_MAP_CREDIT, DEEP_SPACE_NOTE, SKY_NOTE, STAR_NOTE, deepSpaceCaption, formatGravity, kindLabel, mapNote } from '../../src/ui/bodyText';
 
 describe('deep-space notes', () => {
   it('says the heliosphere and Oort cloud are schematic, nothing solid, and no individual Oort object has been observed', () => {
@@ -64,5 +64,15 @@ describe('formatGravity', () => {
     expect(formatGravity(0.284)).toBe('0.284 m/s²');
     expect(formatGravity(9.81)).toBe('9.81 m/s²');
     expect(formatGravity(274)).toBe('274 m/s²');
+  });
+});
+
+describe('SKY_NOTE', () => {
+  it('says the stars are real but shown in direction only, and gives the counts and the source', () => {
+    expect(SKY_NOTE).toContain('direction');
+    expect(SKY_NOTE).toContain('not their real distance');
+    expect(SKY_NOTE).toContain('48');
+    expect(SKY_NOTE).toContain('5,022');
+    expect(SKY_NOTE).toContain('HYG');
   });
 });

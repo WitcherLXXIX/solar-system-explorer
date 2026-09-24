@@ -102,7 +102,7 @@ function loop(now: number): void {
   const pose = camera.update(dt);
   lastInput = {
     frame, cameraPos: pose.position, focusPoint: pose.focusPoint,
-    altitudeM: pose.altitudeM, date: clock.date, showOrbits: toggles.orbits, showBelts: toggles.belts, showDeepSpace: toggles.deepSpace,
+    altitudeM: pose.altitudeM, date: clock.date, showOrbits: toggles.orbits, showBelts: toggles.belts, showDeepSpace: toggles.deepSpace, showNightSky: toggles.nightSky,
   };
   const info = scene.render(lastInput);
 
@@ -175,6 +175,8 @@ declare global {
       tailsVisible(): string[];
       setDeepSpace(on: boolean): void;
       deepSpaceState(): { oortPoints: number; oortVisible: boolean; heliosphereVisible: boolean };
+      setNightSky(on: boolean): void;
+      skyState(): { points: number; visible: boolean };
       starsInView(): BodyId[];
       screenOf(id: BodyId): { x: number; y: number; inFront: boolean } | null;
     };
@@ -210,6 +212,8 @@ window.__solar = {
   beltsVisible: () => scene.beltsVisible(),
   tailsVisible: () => scene.cometTailsVisible(),
   setDeepSpace: (on) => toggles.set('deepSpace', on),
+  setNightSky: (on) => toggles.set('nightSky', on),
+  skyState: () => scene.skyState(),
   deepSpaceState: () => ({ oortPoints: scene.oortPointCount(), oortVisible: scene.oortVisible(), heliosphereVisible: scene.heliosphereVisible() }),
   starsInView: () => starsShown,
   screenOf: (id) => screens.get(id) ?? null,
