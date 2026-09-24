@@ -8,9 +8,9 @@ import { NO_SECOND_SOURCE, SECOND_SOURCE } from './smallBodiesSecondSource';
 
 /**
  * The ids this catalog file must hold. Quaoar, Orcus, Sedna and Gonggong were dropped: no radius is published on any allowed
- * domain (see docs/small-body-sources.md). Task 6 extends the list with the four comets.
+ * domain (see docs/small-body-sources.md). The four comets follow.
  */
-const EXPECTED_IDS: readonly BodyId[] = ['vesta', 'pallas', 'hygiea', 'juno'];
+const EXPECTED_IDS: readonly BodyId[] = ['vesta', 'pallas', 'hygiea', 'juno', 'halley', 'halebopp', 'c67p', 'swifttuttle'];
 const relDiff = (a: number, b: number): number => Math.abs(a - b) / Math.abs(b);
 const wrapDeg = (d: number): number => ((d + 540) % 360) - 180;
 
@@ -79,6 +79,13 @@ describe('small-body elements', () => {
       }
       if (b.kind === 'tno') expect(aAu, b.id).toBeGreaterThan(30);
       if (b.kind === 'comet') expect(SMALL_BODY_ELEMENTS[b.id]!.elements.e, b.id).toBeGreaterThan(0.5);
+    }
+  });
+  it('gives every comet a highly eccentric orbit with its perihelion inside Jupiter\'s orbit', () => {
+    for (const b of SMALL_BODIES.filter((x) => x.kind === 'comet')) {
+      const el = SMALL_BODY_ELEMENTS[b.id]!.elements;
+      expect(el.e, b.id).toBeGreaterThan(0.5);
+      expect((el.aKm * 1000 * (1 - el.e)) / AU_M, b.id).toBeLessThan(5.2);
     }
   });
   it('satisfy n * P = 360 (mean motion against the catalog period: two different SBDB fields)', () => {

@@ -54,4 +54,48 @@ export const SMALL_BODY_ELEMENTS: Partial<Record<BodyId, ElementSet>> = {
     },
     source: `${SBDB}, sstr=3, epoch JD 2461200.5 TDB`,
   },
+  halley: {
+    frame: 'ecliptic',
+    elements: {
+      epochJd: 2_439_875.5,
+      aKm: 17.92863504856923 * AU_KM, e: 0.9679359956953211, iDeg: 162.1905300439129,
+      nodeDeg: 59.09894720612437, periDeg: 112.2414314637764, meanAnomalyDeg: 274.3823371366792,
+      meanMotionDegPerDay: 0.01298324443268444,
+      nodeRateDegPerYear: 0, periRateDegPerYear: 0,
+    },
+    source: `${SBDB}, sstr=1P, epoch JD 2439875.5 TDB (non-gravitational terms ignored)`,
+  },
+  halebopp: {
+    frame: 'ecliptic',
+    elements: {
+      epochJd: 2_459_837.5,
+      aKm: 177.4333839117583 * AU_KM, e: 0.9949810027633206, iDeg: 89.28759424740302,
+      nodeDeg: 282.7334213961641, periDeg: 130.4146670659176, meanAnomalyDeg: 3.878386339423241,
+      meanMotionDegPerDay: 0.0004170144183266921,
+      nodeRateDegPerYear: 0, periRateDegPerYear: 0,
+    },
+    source: `${SBDB}, sstr=C/1995 O1, epoch JD 2459837.5 TDB (non-gravitational terms ignored)`,
+  },
+  c67p: {
+    frame: 'ecliptic',
+    elements: {
+      epochJd: 2_457_305.5,
+      aKm: 3.462249490129549 * AU_KM, e: 0.6409081308996354, iDeg: 7.040294937543767,
+      nodeDeg: 50.13557377155012, periDeg: 12.79824970228189, meanAnomalyDeg: 8.859927425218402,
+      meanMotionDegPerDay: 0.1529912291873851,
+      nodeRateDegPerYear: 0, periRateDegPerYear: 0,
+    },
+    source: `${SBDB}, sstr=67P, epoch JD 2457305.5 TDB (non-gravitational terms ignored)`,
+  },
+  swifttuttle: {
+    frame: 'ecliptic',
+    elements: {
+      epochJd: 2_450_000.5,
+      aKm: 26.0920694978266 * AU_KM, e: 0.963225755046038, iDeg: 113.453816997171,
+      nodeDeg: 139.3811920815948, periDeg: 152.9821676305871, meanAnomalyDeg: 7.631696167124212,
+      meanMotionDegPerDay: 0.007395052881692476,
+      nodeRateDegPerYear: 0, periRateDegPerYear: 0,
+    },
+    source: `${SBDB}, sstr=109P, epoch JD 2450000.5 TDB (non-gravitational terms ignored)`,
+  },
 };

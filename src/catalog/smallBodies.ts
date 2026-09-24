@@ -9,8 +9,9 @@ const gravity = (massKg: number, radiusM: number): number => (G * massKg) / radi
 const VESTA_MASS = massFromGm(17.2882844);
 const PALLAS_MASS = massFromGm(13.63);
 const HYGIEA_MASS = massFromGm(7);
+const C67P_MASS = massFromGm(662.2e-9);
 
-/** Named asteroids (and, from Task 6, comets) drawn as plain-colour bodies; colours are appearance choices, not measurements. */
+/** Named asteroids and comets drawn as plain-colour bodies; colours are appearance choices, not measurements. */
 export const SMALL_BODIES: readonly BodyData[] = [
   {
     id: 'vesta', name: 'Vesta', kind: 'asteroid', parent: 'sun', orbitSource: 'elements',
@@ -35,5 +36,29 @@ export const SMALL_BODIES: readonly BodyData[] = [
     orbitPeriodDays: 1594.434579527149, radiusM: 246.596 * 500, massKg: null, rotationPeriodH: 7.21,
     axialTiltDeg: null, surfaceGravity: null, meanTempK: null, maps: {}, color: '#9a948c',
     source: `${SBDB_PHYS}: diameter 246.596 km (NEOWISE) halved, no GM published (mass and gravity null), rot_per 7.21 h`,
+  },
+  {
+    id: 'halley', name: 'Halley', kind: 'comet', parent: 'sun', orbitSource: 'elements',
+    orbitPeriodDays: 27728.04608790421, radiusM: 11.0 * 500, massKg: null, rotationPeriodH: null,
+    axialTiltDeg: null, surfaceGravity: null, meanTempK: null, maps: {}, color: '#5c5852',
+    source: `${SBDB_PHYS}: nucleus diameter 11.0 km (Lamy 2004) halved (NASA science.nasa.gov: about 11 km), no GM and no rot_per published`,
+  },
+  {
+    id: 'halebopp', name: 'Hale-Bopp', kind: 'comet', parent: 'sun', orbitSource: 'elements',
+    orbitPeriodDays: 863279.5034870314, radiusM: 60 * 500, massKg: null, rotationPeriodH: null,
+    axialTiltDeg: null, surfaceGravity: null, meanTempK: null, maps: {}, color: '#7a7568',
+    source: `${SBDB_PHYS}: nucleus diameter 60 km (Fernandez 2002) halved (NASA science.nasa.gov: about 60 km), no GM and no rot_per published`,
+  },
+  {
+    id: 'c67p', name: '67P/Churyumov-Gerasimenko', kind: 'comet', parent: 'sun', orbitSource: 'elements',
+    orbitPeriodDays: 2353.076067903661, radiusM: 3.4 * 500, massKg: C67P_MASS, rotationPeriodH: 12.76129,
+    axialTiltDeg: null, surfaceGravity: gravity(C67P_MASS, 3.4 * 500), meanTempK: null, maps: {}, color: '#4d4a46',
+    source: `${SBDB_PHYS}: diameter 3.4 km halved, GM 662.2e-9 km^3/s^2, rot_per 12.76129 h`,
+  },
+  {
+    id: 'swifttuttle', name: 'Swift-Tuttle', kind: 'comet', parent: 'sun', orbitSource: 'elements',
+    orbitPeriodDays: 48681.19346262312, radiusM: 26 * 500, massKg: null, rotationPeriodH: null,
+    axialTiltDeg: null, surfaceGravity: null, meanTempK: null, maps: {}, color: '#5f5b55',
+    source: `${SBDB_PHYS}: nucleus diameter 26 km (Lamy 2004) halved (NASA science.nasa.gov: about 26 km across), no GM and no rot_per published`,
   },
 ];
