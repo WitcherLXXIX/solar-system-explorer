@@ -4,3 +4,4 @@ dist
 public/textures/*.jpg
 *.log
 public/textures/*.png
+__pycache__
