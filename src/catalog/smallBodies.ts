@@ -1,4 +1,4 @@
-import { G } from '../units';
+import { G } from '../units.ts';
 import type { BodyData } from './bodies';
 
 const SBDB_PHYS = 'JPL Small-Body Database API (ssd-api.jpl.nasa.gov/sbdb.api, phys-par=1), read 2026-09-23';
