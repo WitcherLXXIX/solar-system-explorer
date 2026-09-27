@@ -24,6 +24,10 @@ jobs:
           node-version: 26
           cache: npm
       - run: npm ci
+      - uses: actions/cache@v4
+        with:
+          path: public/textures
+          key: textures-${{ hashFiles('src/catalog/*.ts', 'scripts/fetch-textures.mjs') }}
       - run: npm run textures
       - run: npm test
       - run: npm run typecheck

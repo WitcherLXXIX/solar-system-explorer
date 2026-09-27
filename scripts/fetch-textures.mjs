@@ -26,11 +26,18 @@ for (const file of allTextureFiles()) {
   // Solar System Scope serves an HTML page unless a browser-like user agent is sent.
   const url = source ? source.url : `https://www.solarsystemscope.com/textures/download/${file}`;
   if (!isAllowedHost(url)) throw new Error(`${file}: ${url} is not on the allowed host list`);
-  const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' } });
-  const bytes = new Uint8Array(await res.arrayBuffer());
   const [m0, m1] = MAGIC[ext];
-  if (!res.ok || bytes[0] !== m0 || bytes[1] !== m1 || bytes.length < MIN_BYTES[ext]) {
-    throw new Error(`${file}: expected a ${ext.toUpperCase()}, got status ${res.status}, ${bytes.length} bytes`);
+  // Hosts sometimes answer a CI runner with a 2xx-but-not-an-image challenge page; retry with backoff before failing.
+  let res, bytes;
+  for (let attempt = 1; ; attempt++) {
+    res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' } });
+    bytes = new Uint8Array(await res.arrayBuffer());
+    if (res.ok && bytes[0] === m0 && bytes[1] === m1 && bytes.length >= MIN_BYTES[ext]) break;
+    if (attempt === 4) {
+      throw new Error(`${file}: expected a ${ext.toUpperCase()}, got status ${res.status}, ${bytes.length} bytes (after ${attempt} attempts)`);
+    }
+    console.log(`retry ${file}: status ${res.status}, ${bytes.length} bytes (attempt ${attempt})`);
+    await new Promise((r) => setTimeout(r, attempt * 10_000));
   }
   if (source) {
     const size = imageSize(bytes);
