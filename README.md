@@ -1,5 +1,7 @@
 # Solar System Explorer
 
+**Live: https://witcherlxxix.github.io/solar-system-explorer/** (no install, works in any modern browser)
+
 A browser-based 3D solar system you can zoom through continuously, from just above a planet's surface out past Neptune and on to the nearest stars (about 10.6 light-years), using real sizes, real distances and real planetary positions. Phases 1, 2a, 2b, 3, 4 and 5 (a fidelity pass and a real night sky) of a larger project (see `docs/superpowers/specs/`).
 
 Planet fidelity in this phase: high-resolution surface maps (loaded only for nearby bodies), atmospheres, Saturn's rings with ring and planet shadows and faint rings for the other three giants, and Earth's night lights, cloud layer and ocean glint. You can descend to 0.2% of a planet's radius above its surface (about 13 km at Earth). Below about 3,800 km the 8K map is being magnified (it is about 4.9 km per texel at Earth's equator); at 1,000 km one texel already spans about 4 screen pixels; real terrain detail needs streamed tiles, which this app does not have.
