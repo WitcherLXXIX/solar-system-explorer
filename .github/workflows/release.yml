@@ -1,0 +1,39 @@
+name: Release offline bundle
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 26
+          cache: npm
+      - run: npm ci
+      - run: npm run textures
+      - run: npm test
+      - run: npm run build
+      - name: Package offline bundle
+        run: |
+          mkdir -p stage
+          cp -r dist stage/solar-system-explorer
+          tar -czf solar-system-explorer.tar.gz -C stage solar-system-explorer
+      - name: Publish release
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" solar-system-explorer.tar.gz --title "$GITHUB_REF_NAME" --generate-notes
+      - name: Keep bundle as a workflow artifact (manual runs)
+        if: "!startsWith(github.ref, 'refs/tags/')"
+        uses: actions/upload-artifact@v4
+        with:
+          name: solar-system-explorer
+          path: solar-system-explorer.tar.gz

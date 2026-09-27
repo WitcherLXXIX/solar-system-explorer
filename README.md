@@ -91,6 +91,18 @@ Added: the camera limit is raised to 1e17 m and the far plane to 1e18 m; twelve 
 
 The flat, washed-out look at Earth's 12.7 km camera floor is not caused by the cloud shell. Shots at 12.7 km over desert and ocean (`--view earth,12740,0,25` and `--view earth,12740,60,25`) looked visually indistinguishable with the cloud shell hidden and drawn. The test spots were clear sky (desert and open ocean), and the original pale wash over ocean was not reproduced (the ocean shots were dark blue), so this rules out the cloud shell only for those spots. With effects off the view is still a single flat colour: the 8K map has about 4.9 km per texel, so at 12.7 km a texel fills a large part of the screen and the picture is a magnified, featureless patch. That is the map's resolution, not a bug. The atmosphere adds a slight pale haze and a soft glow on top (compare effects on with effects off), but it does not remove any detail that the map has. (Note that `--view`'s pitch is the camera's latitude, so `-89` looks at the polar night side and is nearly black in September.) Real detail here would need a higher-resolution map or a procedural detail layer.
 
+## Install on Linux
+
+Adds a "Solar System Explorer" entry with an icon to your application menu. No sudo, nothing outside your home directory.
+
+    curl -fsSL https://raw.githubusercontent.com/WitcherLXXIX/solar-system-explorer/master/packaging/install.sh | sh
+
+That installs the online launcher, which opens the live site in your default browser. For a copy that works without internet (about 70 MB, needs `python3`), add `--offline`:
+
+    curl -fsSL https://raw.githubusercontent.com/WitcherLXXIX/solar-system-explorer/master/packaging/install.sh | sh -s -- --offline
+
+The offline copy comes from the latest GitHub release (built by `.github/workflows/release.yml` when a `v*` tag is pushed). It serves itself on `127.0.0.1:47831` and stops after 30 minutes idle. Remove either install with `packaging/uninstall.sh`. If the icon looks blank after installing, log out and back in once.
+
 ## Run
 
     npm install
